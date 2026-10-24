@@ -54,8 +54,8 @@ class InstallCommandTest extends TestCase
         $this->assertStringContainsString("__DIR__ . '/database/migrations'", $this->readProjectFile('rector.php'));
         $this->assertStringContainsString('- app', $this->readProjectFile('phpstan.neon'));
         $this->assertStringContainsString('vendor/larastan/larastan/extension.neon', $this->readProjectFile('phpstan.neon'));
-        $this->assertStringContainsString("'phpstan.neon'", $this->readProjectFile('.github/workflows/phpstan.yml'));
-        $this->assertStringNotContainsString('analyse', $this->readProjectFile('.github/workflows/code-style.yml'));
+        $this->assertSame($this->filesystem->readFile(__DIR__ . '/../../config/ultimate-formatter.php'), $this->readProjectFile('config/ultimate-formatter.php'));
+        $this->assertDirectoryDoesNotExist("{$this->projectPath}/.github");
         $this->assertFileExists("{$this->projectPath}/.editorconfig");
         $this->assertFileExists("{$this->projectPath}/.git-blame-ignore-revs");
     }
@@ -73,6 +73,7 @@ class InstallCommandTest extends TestCase
         $this->assertStringContainsString('- src', $this->readProjectFile('phpstan.neon.dist'));
         $this->assertStringNotContainsString('withSkip', $this->readProjectFile('rector.php'));
         $this->assertStringContainsString('build/.php-cs-fixer.cache', $this->readProjectFile('.php-cs-fixer.php'));
+        $this->assertFileDoesNotExist("{$this->projectPath}/config/ultimate-formatter.php");
     }
 
     /**

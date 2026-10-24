@@ -10,9 +10,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use UnexpectedValueException;
 
 abstract class FormatterCommand extends Command
 {
+    protected const DEFAULT_CONFIG_FILE = __DIR__ . '/../../../config/ultimate-formatter.php';
+    protected const PUBLISHED_CONFIG_FILE = 'config/ultimate-formatter.php';
+
     /**
      * @return void
      */
@@ -41,8 +45,32 @@ abstract class FormatterCommand extends Command
     }
 
     /**
+     * @param InputInterface $input
+     * @param string $key
+     * @return array<int, string>
+     */
+    protected function configuredArguments(InputInterface $input, string $key): array
+    {
+        // The binary runs without booting Laravel, so the config file is read directly.
+        $publishedConfigFile = "{$this->projectPath($input)}/" . self::PUBLISHED_CONFIG_FILE;
+        $publishedArguments = is_file($publishedConfigFile) ? data_get(require $publishedConfigFile, $key) : null;
+        $arguments = $publishedArguments ?? data_get(require self::DEFAULT_CONFIG_FILE, $key);
+
+        if (is_array($arguments) === false) {
+            throw new UnexpectedValueException("Config ultimate-formatter.{$key} must be a list of arguments.");
+        }
+
+        return collect($arguments)
+            ->map(fn(mixed $argument): string => is_string($argument)
+                ? $argument
+                : throw new UnexpectedValueException("Config ultimate-formatter.{$key} must contain only strings."))
+            ->values()
+            ->all();
+    }
+
+    /**
      * @param string $script
-     * @param list<string> $arguments
+     * @param array<int, string> $arguments
      * @param InputInterface $input
      * @param OutputInterface $output
      * @return int

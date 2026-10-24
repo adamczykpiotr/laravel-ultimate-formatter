@@ -19,8 +19,8 @@ class CheckCommand extends FormatterCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Both tools always run, so one CI pass reports every pending change.
-        $rectorExitCode = $this->runPhpScript('vendor/bin/rector', ['process', '--dry-run', '--no-progress-bar'], $input, $output);
-        $fixerExitCode = $this->runPhpScript('vendor/bin/php-cs-fixer', ['fix', '--dry-run', '--diff'], $input, $output);
+        $rectorExitCode = $this->runPhpScript('vendor/bin/rector', $this->configuredArguments($input, 'check.rector'), $input, $output);
+        $fixerExitCode = $this->runPhpScript('vendor/bin/php-cs-fixer', $this->configuredArguments($input, 'check.php-cs-fixer'), $input, $output);
 
         if ($rectorExitCode !== self::SUCCESS || $fixerExitCode !== self::SUCCESS) {
             return self::FAILURE;

@@ -11,8 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'formatter:analyse', description: 'Run PHPStan with the project config')]
 class AnalyseCommand extends FormatterCommand
 {
-    protected const MEMORY_LIMIT = '2G';
-
     /**
      * @param InputInterface $input
      * @param OutputInterface $output
@@ -20,6 +18,6 @@ class AnalyseCommand extends FormatterCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        return $this->runPhpScript('vendor/bin/phpstan', ['analyse', '--memory-limit=' . self::MEMORY_LIMIT], $input, $output);
+        return $this->runPhpScript('vendor/bin/phpstan', $this->configuredArguments($input, 'analyse.phpstan'), $input, $output);
     }
 }

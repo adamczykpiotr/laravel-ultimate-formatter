@@ -32,8 +32,8 @@ The command detects the layout and fills in the paths that exist:
 | Package | `src/` | `src`, `tests` | `src`, `tests` | `src`, `tests` | `phpstan.neon.dist` |
 
 It writes `.php-cs-fixer.php`, `rector.php`, the PHPStan config, `.editorconfig`,
-the `code-style.yml` and `phpstan.yml` workflows, and `.git-blame-ignore-revs`. Existing files are skipped
-unless you pass `--force`. In an application, Rector skips `database/migrations`.
+and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
+Existing files are skipped unless you pass `--force`. In an application, Rector skips `database/migrations`.
 
 ## Usage
 
@@ -52,6 +52,17 @@ Record bulk formatting commits in `.git-blame-ignore-revs` so blame skips them, 
 `blame.ignoreRevsFile` at that file in your local git config.
 
 ## Customising
+
+The arguments each command passes to its tools live in `config/ultimate-formatter.php`. Override a
+tool's list there, and the tools you leave out keep the package defaults:
+
+```php
+return [
+    'analyse' => [
+        'phpstan' => ['analyse', '--memory-limit=4G'],
+    ],
+];
+```
 
 The generated files are yours to edit. Rules are merged in, not replaced:
 

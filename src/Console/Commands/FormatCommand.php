@@ -30,17 +30,17 @@ class FormatCommand extends FormatterCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->getOption('models') === true) {
-            $ideHelperExitCode = $this->runPhpScript('artisan', ['ide-helper:models', '--reset', '--write', '--quiet'], $input, $output);
+            $ideHelperExitCode = $this->runPhpScript('artisan', $this->configuredArguments($input, 'format.ide-helper'), $input, $output);
             if ($ideHelperExitCode !== self::SUCCESS) {
                 return $ideHelperExitCode;
             }
         }
 
-        $rectorExitCode = $this->runPhpScript('vendor/bin/rector', ['process', '--no-progress-bar', '--no-diffs'], $input, $output);
+        $rectorExitCode = $this->runPhpScript('vendor/bin/rector', $this->configuredArguments($input, 'format.rector'), $input, $output);
         if ($rectorExitCode !== self::SUCCESS) {
             return $rectorExitCode;
         }
 
-        return $this->runPhpScript('vendor/bin/php-cs-fixer', ['fix', '--quiet'], $input, $output);
+        return $this->runPhpScript('vendor/bin/php-cs-fixer', $this->configuredArguments($input, 'format.php-cs-fixer'), $input, $output);
     }
 }

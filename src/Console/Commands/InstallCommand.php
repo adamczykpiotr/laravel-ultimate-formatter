@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
-#[AsCommand(name: 'formatter:install', description: 'Publish the formatter configs, editorconfig and CI workflow into the project')]
+#[AsCommand(name: 'formatter:install', description: 'Publish the formatter configs and editorconfig into the project')]
 class InstallCommand extends FormatterCommand
 {
     protected const STUBS_DIRECTORY = __DIR__ . '/../../../stubs';
@@ -68,7 +68,6 @@ class InstallCommand extends FormatterCommand
      */
     protected function renderFiles(string $path, ProjectLayout $layout): array
     {
-        $phpstanConfigFile = $layout->phpstanConfigFile();
         $replacements = [
             '{{fixer_paths}}' => $this->renderPhpPaths($path, $layout->fixerDirectories()),
             '{{fixer_cache_file}}' => $layout->fixerCacheFile(),
@@ -76,18 +75,22 @@ class InstallCommand extends FormatterCommand
             '{{rector_skip}}' => $this->renderRectorSkip($path, $layout->rectorSkippedDirectories()),
             '{{larastan_include}}' => $this->renderLarastanInclude($path),
             '{{phpstan_paths}}' => $this->renderNeonPaths($path, $layout->phpstanDirectories()),
-            '{{phpstan_config_file}}' => $phpstanConfigFile,
         ];
 
-        return [
+        $files = [
             '.php-cs-fixer.php' => $this->renderStub('php-cs-fixer.php.stub', $replacements),
             'rector.php' => $this->renderStub('rector.php.stub', $replacements),
-            $phpstanConfigFile => $this->renderStub('phpstan.neon.stub', $replacements),
+            $layout->phpstanConfigFile() => $this->renderStub('phpstan.neon.stub', $replacements),
             '.editorconfig' => $this->renderStub('editorconfig.stub', $replacements),
-            '.github/workflows/code-style.yml' => $this->renderStub('code-style.yml.stub', $replacements),
-            '.github/workflows/phpstan.yml' => $this->renderStub('phpstan.yml.stub', $replacements),
             '.git-blame-ignore-revs' => $this->renderStub('git-blame-ignore-revs.stub', $replacements),
         ];
+
+        // A package's config/ directory holds the configs it ships, so only an app gets this one.
+        if ($layout === ProjectLayout::APP) {
+            $files[self::PUBLISHED_CONFIG_FILE] = (new Filesystem())->readFile(self::DEFAULT_CONFIG_FILE);
+        }
+
+        return $files;
     }
 
     /**
