@@ -60,28 +60,6 @@ enum ProjectLayout: string
     }
 
     /**
-     * @return list<string>
-     */
-    public function phpstanDirectories(): array
-    {
-        return match ($this) {
-            self::APP => ['app'],
-            self::PACKAGE => ['src', 'tests'],
-        };
-    }
-
-    /**
-     * @return string
-     */
-    public function phpstanConfigFile(): string
-    {
-        return match ($this) {
-            self::APP => 'phpstan.neon',
-            self::PACKAGE => 'phpstan.neon.dist',
-        };
-    }
-
-    /**
      * @return string
      */
     public function fixerCacheFile(): string

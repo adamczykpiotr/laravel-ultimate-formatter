@@ -14,7 +14,4 @@ return [
         'rector' => ['process', '--dry-run', '--no-progress-bar'],
         'php-cs-fixer' => ['fix', '--dry-run', '--diff'],
     ],
-    'analyse' => [
-        'phpstan' => ['analyse', '--memory-limit=2G'],
-    ],
 ];

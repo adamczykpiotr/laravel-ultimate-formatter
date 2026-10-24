@@ -4,9 +4,9 @@
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/adamczykpiotr/laravel-ultimate-formatter/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/adamczykpiotr/laravel-ultimate-formatter/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/adamczykpiotr/laravel-ultimate-formatter.svg?style=flat-square)](https://packagist.org/packages/adamczykpiotr/laravel-ultimate-formatter)
 
-Ultimate code formatter for Laravel, taking care of everything: one package that ships Rector,
-PHP CS Fixer and PHPStan/Larastan with a shared, opinionated configuration, so every project
-formats and analyses its code the same way.
+Ultimate code formatter for Laravel, taking care of everything: one package that ships Rector
+and PHP CS Fixer with a shared, opinionated configuration, so every project formats its code the
+same way.
 
 ## Installation
 
@@ -26,12 +26,12 @@ vendor/bin/ultimate-formatter install
 
 The command detects the layout and fills in the paths that exist:
 
-| Layout | Detected by | PHP CS Fixer | Rector | PHPStan | PHPStan config |
-|---|---|---|---|---|---|
-| Application | `artisan` and `app/` | `app`, `tests` | `app`, `database`, `tests` | `app` | `phpstan.neon` |
-| Package | `src/` | `src`, `tests` | `src`, `tests` | `src`, `tests` | `phpstan.neon.dist` |
+| Layout | Detected by | PHP CS Fixer | Rector |
+|---|---|---|---|
+| Application | `artisan` and `app/` | `app`, `tests` | `app`, `database`, `tests` |
+| Package | `src/` | `src`, `tests` | `src`, `tests` |
 
-It writes `.php-cs-fixer.php`, `rector.php`, the PHPStan config and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
+It writes `.php-cs-fixer.php`, `rector.php` and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
 Existing files are skipped unless you pass `--force`. In an application, Rector skips `database/migrations`.
 
 ## Usage
@@ -39,13 +39,12 @@ Existing files are skipped unless you pass `--force`. In an application, Rector 
 ```bash
 vendor/bin/ultimate-formatter format    # Rector, then PHP CS Fixer
 vendor/bin/ultimate-formatter check     # dry run of both, fails on any change (CI)
-vendor/bin/ultimate-formatter analyse   # PHPStan
 ```
 
 `format --models` regenerates model docblocks with
 [laravel-ide-helper](https://github.com/barryvdh/laravel-ide-helper) first. In a Laravel app the
-same commands are available as `php artisan formatter:install`, `formatter:format`,
-`formatter:check` and `formatter:analyse`.
+same commands are available as `php artisan formatter:install`, `formatter:format`
+and `formatter:check`.
 
 Record bulk formatting commits in `.git-blame-ignore-revs` so blame skips them, and point
 `blame.ignoreRevsFile` at that file in your local git config.
@@ -57,8 +56,8 @@ tool's list there, and the tools you leave out keep the package defaults:
 
 ```php
 return [
-    'analyse' => [
-        'phpstan' => ['analyse', '--memory-limit=4G'],
+    'check' => [
+        'php-cs-fixer' => ['fix', '--dry-run', '--diff', '--verbose'],
     ],
 ];
 ```
@@ -75,9 +74,6 @@ return RectorConfigFactory::create()
     ->withPaths([__DIR__ . '/src'])
     ->withSkip([SomeRector::class]);
 ```
-
-The PHPStan config includes `phpstan/base.neon` from this package, which sets `level: max`. Lower
-it or add your own parameters below the include.
 
 ## What it enforces
 

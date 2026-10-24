@@ -52,8 +52,6 @@ class InstallCommandTest extends TestCase
 
         $this->assertSame(Command::SUCCESS, $exitCode);
         $this->assertStringContainsString("__DIR__ . '/database/migrations'", $this->readProjectFile('rector.php'));
-        $this->assertStringContainsString('- app', $this->readProjectFile('phpstan.neon'));
-        $this->assertStringContainsString('vendor/larastan/larastan/extension.neon', $this->readProjectFile('phpstan.neon'));
         $this->assertSame($this->filesystem->readFile(__DIR__ . '/../../config/ultimate-formatter.php'), $this->readProjectFile('config/ultimate-formatter.php'));
         $this->assertDirectoryDoesNotExist("{$this->projectPath}/.github");
         $this->assertFileDoesNotExist("{$this->projectPath}/.editorconfig");
@@ -70,7 +68,7 @@ class InstallCommandTest extends TestCase
         $exitCode = $this->runInstall();
 
         $this->assertSame(Command::SUCCESS, $exitCode);
-        $this->assertStringContainsString('- src', $this->readProjectFile('phpstan.neon.dist'));
+        $this->assertStringContainsString("__DIR__ . '/src'", $this->readProjectFile('.php-cs-fixer.php'));
         $this->assertStringNotContainsString('withSkip', $this->readProjectFile('rector.php'));
         $this->assertStringContainsString('build/.php-cs-fixer.cache', $this->readProjectFile('.php-cs-fixer.php'));
         $this->assertFileDoesNotExist("{$this->projectPath}/config/ultimate-formatter.php");
@@ -87,19 +85,6 @@ class InstallCommandTest extends TestCase
 
         $this->assertInstanceOf(Config::class, require "{$this->projectPath}/.php-cs-fixer.php");
         $this->assertInstanceOf(RectorConfigBuilder::class, require "{$this->projectPath}/rector.php");
-    }
-
-    /**
-     * @return void
-     */
-    public function test_omits_larastan_include_with_extension_installer(): void
-    {
-        $this->filesystem->mkdir("{$this->projectPath}/src");
-        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", '{"require-dev": {"phpstan/extension-installer": "^1.4"}}');
-
-        $this->runInstall();
-
-        $this->assertStringNotContainsString('larastan', $this->readProjectFile('phpstan.neon.dist'));
     }
 
     /**

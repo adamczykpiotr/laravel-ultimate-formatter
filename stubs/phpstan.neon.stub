@@ -1,6 +1,0 @@
-includes:
-{{larastan_include}}    - vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan/base.neon
-
-parameters:
-    paths:
-{{phpstan_paths}}

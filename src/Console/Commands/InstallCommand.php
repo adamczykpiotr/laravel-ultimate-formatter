@@ -16,7 +16,6 @@ use Symfony\Component\Filesystem\Filesystem;
 class InstallCommand extends FormatterCommand
 {
     protected const STUBS_DIRECTORY = __DIR__ . '/../../../stubs';
-    protected const EXTENSION_INSTALLER_PACKAGE = 'phpstan/extension-installer';
 
     /**
      * @return void
@@ -73,14 +72,11 @@ class InstallCommand extends FormatterCommand
             '{{fixer_cache_file}}' => $layout->fixerCacheFile(),
             '{{rector_paths}}' => $this->renderPhpPaths($path, $layout->rectorDirectories()),
             '{{rector_skip}}' => $this->renderRectorSkip($path, $layout->rectorSkippedDirectories()),
-            '{{larastan_include}}' => $this->renderLarastanInclude($path),
-            '{{phpstan_paths}}' => $this->renderNeonPaths($path, $layout->phpstanDirectories()),
         ];
 
         $files = [
             '.php-cs-fixer.php' => $this->renderStub('php-cs-fixer.php.stub', $replacements),
             'rector.php' => $this->renderStub('rector.php.stub', $replacements),
-            $layout->phpstanConfigFile() => $this->renderStub('phpstan.neon.stub', $replacements),
             '.git-blame-ignore-revs' => $this->renderStub('git-blame-ignore-revs.stub', $replacements),
         ];
 
@@ -130,51 +126,5 @@ class InstallCommand extends FormatterCommand
         }
 
         return "\n    ->withSkip([\n{$skippedPaths}\n    ])";
-    }
-
-    /**
-     * @param string $path
-     * @param list<string> $directories
-     * @return string
-     */
-    protected function renderNeonPaths(string $path, array $directories): string
-    {
-        return collect($directories)
-            ->filter(fn(string $directory): bool => is_dir("{$path}/{$directory}"))
-            ->map(fn(string $directory): string => "        - {$directory}")
-            ->implode("\n");
-    }
-
-    /**
-     * @param string $path
-     * @return string
-     */
-    protected function renderLarastanInclude(string $path): string
-    {
-        // The extension installer already includes Larastan, and PHPStan rejects a second include.
-        if ($this->requiresPackage($path, self::EXTENSION_INSTALLER_PACKAGE)) {
-            return '';
-        }
-
-        return "    - vendor/larastan/larastan/extension.neon\n";
-    }
-
-    /**
-     * @param string $path
-     * @param string $package
-     * @return bool
-     */
-    protected function requiresPackage(string $path, string $package): bool
-    {
-        $composerFile = "{$path}/composer.json";
-        $filesystem = new Filesystem();
-        if ($filesystem->exists($composerFile) === false) {
-            return false;
-        }
-
-        $composer = json_decode($filesystem->readFile($composerFile), associative: true, flags: JSON_THROW_ON_ERROR);
-
-        return data_get($composer, "require.{$package}") !== null
-            || data_get($composer, "require-dev.{$package}") !== null;
     }
 }

@@ -27,6 +27,5 @@ class ServiceProviderTest extends TestCase
         $this->assertArrayHasKey('formatter:install', $commands);
         $this->assertArrayHasKey('formatter:format', $commands);
         $this->assertArrayHasKey('formatter:check', $commands);
-        $this->assertArrayHasKey('formatter:analyse', $commands);
     }
 }

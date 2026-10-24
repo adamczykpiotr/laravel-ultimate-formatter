@@ -44,7 +44,7 @@ class ConfiguredArgumentsTest extends TestCase
      */
     public function test_uses_package_defaults_without_a_published_config(): void
     {
-        $this->assertSame('analyse --memory-limit=2G', $this->resolveArguments('analyse.phpstan'));
+        $this->assertSame('process --dry-run --no-progress-bar', $this->resolveArguments('check.rector'));
     }
 
     /**
@@ -52,9 +52,9 @@ class ConfiguredArgumentsTest extends TestCase
      */
     public function test_published_config_overrides_a_tool(): void
     {
-        $this->publishConfig("['analyse' => ['phpstan' => ['analyse', '--memory-limit=4G']]]");
+        $this->publishConfig("['check' => ['rector' => ['process', '--dry-run']]]");
 
-        $this->assertSame('analyse --memory-limit=4G', $this->resolveArguments('analyse.phpstan'));
+        $this->assertSame('process --dry-run', $this->resolveArguments('check.rector'));
     }
 
     /**
@@ -62,7 +62,7 @@ class ConfiguredArgumentsTest extends TestCase
      */
     public function test_tools_missing_from_published_config_keep_defaults(): void
     {
-        $this->publishConfig("['analyse' => ['phpstan' => ['analyse']]]");
+        $this->publishConfig("['check' => ['rector' => ['process']]]");
 
         $this->assertSame('fix --quiet', $this->resolveArguments('format.php-cs-fixer'));
     }

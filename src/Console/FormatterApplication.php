@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Console;
 
-use AdamczykPiotr\UltimateFormatter\Console\Commands\AnalyseCommand;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\CheckCommand;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\FormatCommand;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\InstallCommand;
@@ -19,7 +18,6 @@ class FormatterApplication extends Application
         'install' => InstallCommand::class,
         'format' => FormatCommand::class,
         'check' => CheckCommand::class,
-        'analyse' => AnalyseCommand::class,
     ];
 
     public function __construct()
