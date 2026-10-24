@@ -13,10 +13,6 @@ use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
-/**
- * Rewrites shorthand `?Foo` in @param, @return, @var and @throws tags to `Foo|null`.
- * Native signatures keep `?Foo`; only docblocks change.
- */
 final class ExpandNullableDocblockTypesRector extends AbstractRector
 {
     protected const NULLABLE_TAG_TYPE_PATTERN = '/(@param|@return|@var|@throws)(\s+)\?([^\s$|&()]+)/';

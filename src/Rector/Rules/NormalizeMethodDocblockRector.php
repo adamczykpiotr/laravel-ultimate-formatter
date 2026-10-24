@@ -23,9 +23,8 @@ use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
 /**
- * Keeps every method's @param/@return tags in line with its native signature, adding missing ones.
- * Tags narrower than the native type (`@return non-empty-string` on `: string`) are kept,
- * because the docblock carries information the signature cannot.
+ * Tags narrower than the native type (`@return non-empty-string` on `: string`) are kept, because
+ * the docblock carries information the signature cannot.
  */
 final class NormalizeMethodDocblockRector extends AbstractRector
 {
@@ -145,7 +144,6 @@ AFTER,
                 continue;
             }
 
-            // An untyped param without a tag still gets `mixed`.
             $nativeParam = $param->type === null
                 ? new MixedType()
                 : $this->mapNativeType($param->type);

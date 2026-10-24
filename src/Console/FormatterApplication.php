@@ -11,9 +11,6 @@ use Symfony\Component\Console\Application;
 
 class FormatterApplication extends Application
 {
-    /**
-     * Short alias for the standalone binary, mapped to the command class.
-     */
     public const COMMANDS = [
         'install' => InstallCommand::class,
         'format' => FormatCommand::class,
