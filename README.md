@@ -31,8 +31,7 @@ The command detects the layout and fills in the paths that exist:
 | Application | `artisan` and `app/` | `app`, `tests` | `app`, `database`, `tests` | `app` | `phpstan.neon` |
 | Package | `src/` | `src`, `tests` | `src`, `tests` | `src`, `tests` | `phpstan.neon.dist` |
 
-It writes `.php-cs-fixer.php`, `rector.php`, the PHPStan config, `.editorconfig`,
-and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
+It writes `.php-cs-fixer.php`, `rector.php`, the PHPStan config and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
 Existing files are skipped unless you pass `--force`. In an application, Rector skips `database/migrations`.
 
 ## Usage

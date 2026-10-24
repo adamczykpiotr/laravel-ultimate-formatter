@@ -56,7 +56,7 @@ class InstallCommandTest extends TestCase
         $this->assertStringContainsString('vendor/larastan/larastan/extension.neon', $this->readProjectFile('phpstan.neon'));
         $this->assertSame($this->filesystem->readFile(__DIR__ . '/../../config/ultimate-formatter.php'), $this->readProjectFile('config/ultimate-formatter.php'));
         $this->assertDirectoryDoesNotExist("{$this->projectPath}/.github");
-        $this->assertFileExists("{$this->projectPath}/.editorconfig");
+        $this->assertFileDoesNotExist("{$this->projectPath}/.editorconfig");
         $this->assertFileExists("{$this->projectPath}/.git-blame-ignore-revs");
     }
 

@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
-#[AsCommand(name: 'formatter:install', description: 'Publish the formatter configs and editorconfig into the project')]
+#[AsCommand(name: 'formatter:install', description: 'Publish the formatter configs into the project')]
 class InstallCommand extends FormatterCommand
 {
     protected const STUBS_DIRECTORY = __DIR__ . '/../../../stubs';
@@ -81,7 +81,6 @@ class InstallCommand extends FormatterCommand
             '.php-cs-fixer.php' => $this->renderStub('php-cs-fixer.php.stub', $replacements),
             'rector.php' => $this->renderStub('rector.php.stub', $replacements),
             $layout->phpstanConfigFile() => $this->renderStub('phpstan.neon.stub', $replacements),
-            '.editorconfig' => $this->renderStub('editorconfig.stub', $replacements),
             '.git-blame-ignore-revs' => $this->renderStub('git-blame-ignore-revs.stub', $replacements),
         ];
 
