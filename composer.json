@@ -17,19 +17,32 @@
     ],
     "require": {
         "php": "^8.3",
+        "driftingly/rector-laravel": "^2.0",
+        "friendsofphp/php-cs-fixer": "^3.64",
         "illuminate/contracts": "^11.0||^12.0||^13.0",
-        "spatie/laravel-package-tools": "^1.16"
+        "illuminate/support": "^11.0||^12.0||^13.0",
+        "larastan/larastan": "^3.0",
+        "phpstan/phpstan": "^2.0",
+        "rector/rector": "^2.0",
+        "spatie/laravel-package-tools": "^1.16",
+        "symfony/console": "^7.4||^8.0",
+        "symfony/filesystem": "^7.4||^8.0",
+        "symfony/process": "^7.4||^8.0"
     },
     "require-dev": {
-        "laravel/pint": "^1.14",
         "nunomaduro/collision": "^8.8",
-        "larastan/larastan": "^3.0",
         "orchestra/testbench": "^11.0.0||^10.0.0||^9.0.0",
         "phpstan/extension-installer": "^1.4",
         "phpunit/phpunit": "^11.0||^12.0",
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-phpunit": "^2.0"
     },
+    "suggest": {
+        "barryvdh/laravel-ide-helper": "Regenerates model docblocks when running format with --models"
+    },
+    "bin": [
+        "bin/ultimate-formatter"
+    ],
     "autoload": {
         "psr-4": {
             "AdamczykPiotr\\UltimateFormatter\\": "src/"
@@ -44,10 +57,11 @@
     "scripts": {
         "post-autoload-dump": "@composer run prepare",
         "prepare": "@php vendor/bin/testbench package:discover --ansi",
-        "analyse": "vendor/bin/phpstan analyse",
+        "analyse": "@php bin/ultimate-formatter analyse",
+        "check": "@php bin/ultimate-formatter check",
+        "format": "@php bin/ultimate-formatter format",
         "test": "vendor/bin/phpunit",
-        "test-coverage": "vendor/bin/phpunit --coverage-html build/coverage",
-        "format": "vendor/bin/pint"
+        "test-coverage": "vendor/bin/phpunit --coverage-html build/coverage"
     },
     "config": {
         "sort-packages": true,

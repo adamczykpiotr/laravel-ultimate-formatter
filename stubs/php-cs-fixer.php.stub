@@ -1,0 +1,14 @@
+<?php
+
+declare(strict_types=1);
+
+use AdamczykPiotr\UltimateFormatter\PhpCsFixer\FixerConfigFactory;
+use PhpCsFixer\Finder;
+
+$finder = Finder::create()
+    ->in([
+{{fixer_paths}}
+    ])
+    ->name('*.php');
+
+return FixerConfigFactory::create($finder, __DIR__ . '/{{fixer_cache_file}}');

@@ -1,0 +1,39 @@
+name: code-style
+
+on:
+  push:
+    paths:
+      - '**.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - '.php-cs-fixer.php'
+      - 'rector.php'
+      - '{{phpstan_config_file}}'
+      - '.github/workflows/code-style.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code-style:
+    name: code-style
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@v4
+
+      - name: Check formatting
+        run: vendor/bin/ultimate-formatter check
+
+      - name: Run PHPStan
+        run: vendor/bin/ultimate-formatter analyse
