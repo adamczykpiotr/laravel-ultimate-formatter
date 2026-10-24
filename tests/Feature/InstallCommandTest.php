@@ -54,7 +54,8 @@ class InstallCommandTest extends TestCase
         $this->assertStringContainsString("__DIR__ . '/database/migrations'", $this->readProjectFile('rector.php'));
         $this->assertStringContainsString('- app', $this->readProjectFile('phpstan.neon'));
         $this->assertStringContainsString('vendor/larastan/larastan/extension.neon', $this->readProjectFile('phpstan.neon'));
-        $this->assertStringContainsString("'phpstan.neon'", $this->readProjectFile('.github/workflows/code-style.yml'));
+        $this->assertStringContainsString("'phpstan.neon'", $this->readProjectFile('.github/workflows/phpstan.yml'));
+        $this->assertStringNotContainsString('analyse', $this->readProjectFile('.github/workflows/code-style.yml'));
         $this->assertFileExists("{$this->projectPath}/.editorconfig");
         $this->assertFileExists("{$this->projectPath}/.git-blame-ignore-revs");
     }

@@ -85,6 +85,7 @@ class InstallCommand extends FormatterCommand
             $phpstanConfigFile => $this->renderStub('phpstan.neon.stub', $replacements),
             '.editorconfig' => $this->renderStub('editorconfig.stub', $replacements),
             '.github/workflows/code-style.yml' => $this->renderStub('code-style.yml.stub', $replacements),
+            '.github/workflows/phpstan.yml' => $this->renderStub('phpstan.yml.stub', $replacements),
             '.git-blame-ignore-revs' => $this->renderStub('git-blame-ignore-revs.stub', $replacements),
         ];
     }

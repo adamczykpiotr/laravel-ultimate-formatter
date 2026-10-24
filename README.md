@@ -32,7 +32,7 @@ The command detects the layout and fills in the paths that exist:
 | Package | `src/` | `src`, `tests` | `src`, `tests` | `src`, `tests` | `phpstan.neon.dist` |
 
 It writes `.php-cs-fixer.php`, `rector.php`, the PHPStan config, `.editorconfig`,
-`.github/workflows/code-style.yml` and `.git-blame-ignore-revs`. Existing files are skipped
+the `code-style.yml` and `phpstan.yml` workflows, and `.git-blame-ignore-revs`. Existing files are skipped
 unless you pass `--force`. In an application, Rector skips `database/migrations`.
 
 ## Usage

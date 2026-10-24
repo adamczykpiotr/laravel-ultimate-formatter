@@ -8,7 +8,6 @@ on:
       - 'composer.lock'
       - '.php-cs-fixer.php'
       - 'rector.php'
-      - '{{phpstan_config_file}}'
       - '.github/workflows/code-style.yml'
 
 concurrency:
@@ -34,6 +33,3 @@ jobs:
 
       - name: Check formatting
         run: vendor/bin/ultimate-formatter check
-
-      - name: Run PHPStan
-        run: vendor/bin/ultimate-formatter analyse

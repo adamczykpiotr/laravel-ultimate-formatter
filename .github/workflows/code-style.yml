@@ -8,7 +8,6 @@ on:
       - 'composer.lock'
       - '.php-cs-fixer.php'
       - 'rector.php'
-      - 'phpstan.neon.dist'
       - '.github/workflows/code-style.yml'
 
 concurrency:
@@ -34,6 +33,3 @@ jobs:
 
       - name: Check formatting
         run: composer check
-
-      - name: Run PHPStan
-        run: composer analyse
