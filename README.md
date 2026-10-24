@@ -32,7 +32,7 @@ The command detects the layout and fills in the paths that exist:
 | Package | `src/` | `src`, `tests` | `src`, `tests` |
 
 It writes `.php-cs-fixer.php`, `rector.php` and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
-Existing files are skipped unless you pass `--force`. In an application, Rector skips `database/migrations`.
+Existing files are skipped unless you pass `--force`. `.git-blame-ignore-revs` is never overwritten, since it holds your recorded commits. In an application, Rector skips `database/migrations`.
 
 ## Usage
 
@@ -74,6 +74,9 @@ return RectorConfigFactory::create()
     ->withPaths([__DIR__ . '/src'])
     ->withSkip([SomeRector::class]);
 ```
+
+Rector runs 4 parallel processes by default to stay within container memory limits. Raise it in
+`rector.php` with `->withParallel(maxNumberOfProcess: 8)` when the machine has room.
 
 ## What it enforces
 

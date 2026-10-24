@@ -116,6 +116,19 @@ class InstallCommandTest extends TestCase
     /**
      * @return void
      */
+    public function test_keeps_blame_ignore_revs_with_force(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->dumpFile("{$this->projectPath}/.git-blame-ignore-revs", 'recorded-sha');
+
+        $this->runInstall(['--force' => true]);
+
+        $this->assertSame('recorded-sha', $this->readProjectFile('.git-blame-ignore-revs'));
+    }
+
+    /**
+     * @return void
+     */
     public function test_fails_without_a_recognised_layout(): void
     {
         $exitCode = $this->runInstall();

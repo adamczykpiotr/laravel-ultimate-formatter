@@ -16,6 +16,7 @@ use Symfony\Component\Filesystem\Filesystem;
 class InstallCommand extends FormatterCommand
 {
     protected const STUBS_DIRECTORY = __DIR__ . '/../../../stubs';
+    protected const BLAME_IGNORE_REVS_FILE = '.git-blame-ignore-revs';
 
     /**
      * @return void
@@ -47,8 +48,10 @@ class InstallCommand extends FormatterCommand
 
         foreach ($this->renderFiles($path, $layout) as $target => $contents) {
             $targetPath = "{$path}/{$target}";
-            if ($force === false && $filesystem->exists($targetPath)) {
-                $output->writeln("Skipped {$target}, it already exists (use --force to overwrite).");
+            // The blame ignore file holds recorded commit SHAs, so --force must not reset it.
+            $keepsExisting = $force === false || $target === self::BLAME_IGNORE_REVS_FILE;
+            if ($keepsExisting && $filesystem->exists($targetPath)) {
+                $output->writeln("Skipped {$target}, it already exists.");
 
                 continue;
             }
@@ -77,7 +80,7 @@ class InstallCommand extends FormatterCommand
         $files = [
             '.php-cs-fixer.php' => $this->renderStub('php-cs-fixer.php.stub', $replacements),
             'rector.php' => $this->renderStub('rector.php.stub', $replacements),
-            '.git-blame-ignore-revs' => $this->renderStub('git-blame-ignore-revs.stub', $replacements),
+            self::BLAME_IGNORE_REVS_FILE => $this->renderStub('git-blame-ignore-revs.stub', $replacements),
         ];
 
         // A package's config/ directory holds the configs it ships, so only an app gets this one.

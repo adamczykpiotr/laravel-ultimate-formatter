@@ -19,7 +19,7 @@ class RectorConfigFactory
     public static function create(): RectorConfigBuilder
     {
         return RectorConfig::configure()
-            ->withParallel()
+            ->withParallel(maxNumberOfProcess: 4)
             ->withImportNames(
                 importShortClasses: false,
                 removeUnusedImports: true,
