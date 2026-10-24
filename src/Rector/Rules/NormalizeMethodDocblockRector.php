@@ -22,10 +22,6 @@ use Rector\StaticTypeMapper\ValueObject\Type\SelfStaticType;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
-/**
- * Tags narrower than the native type (`@return non-empty-string` on `: string`) are kept, because
- * the docblock carries information the signature cannot.
- */
 final class NormalizeMethodDocblockRector extends AbstractRector
 {
     /**
@@ -167,7 +163,6 @@ AFTER,
      */
     protected function isAtLeastAsNarrow(Type $docType, Type $nativeType): bool
     {
-        // Any explicit tag on an untyped param is more precise than `mixed`.
         if ($nativeType instanceof MixedType) {
             return $docType instanceof MixedType === false;
         }
