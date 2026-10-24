@@ -6,6 +6,7 @@ namespace AdamczykPiotr\UltimateFormatter\Rector\Rules;
 
 use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassMethod;
+use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NeverType;
 use PHPStan\Type\Type;
@@ -118,7 +119,8 @@ AFTER,
         }
 
         $nativeReturn = $this->mapNativeType($node->returnType);
-        if ($this->isAtLeastAsNarrow($phpDocInfo->getReturnType(), $nativeReturn)) {
+        $docReturn = $phpDocInfo->getReturnType();
+        if ($this->isUnmappedTag($phpDocInfo->getReturnTagValue()?->type, $docReturn) || $this->isAtLeastAsNarrow($docReturn, $nativeReturn)) {
             return false;
         }
 
@@ -144,7 +146,8 @@ AFTER,
                 ? new MixedType()
                 : $this->mapNativeType($param->type);
 
-            if ($this->isAtLeastAsNarrow($phpDocInfo->getParamType($name), $nativeParam)) {
+            $docParam = $phpDocInfo->getParamType($name);
+            if ($this->isUnmappedTag($phpDocInfo->getParamTagValueByName($name)?->type, $docParam) || $this->isAtLeastAsNarrow($docParam, $nativeParam)) {
                 continue;
             }
 
@@ -154,6 +157,17 @@ AFTER,
         }
 
         return $changed;
+    }
+
+    /**
+     * @param TypeNode|null $tagType
+     * @param Type $docType
+     * @return bool
+     */
+    protected function isUnmappedTag(TypeNode|null $tagType, Type $docType): bool
+    {
+        // Rector maps tag syntax it cannot model, such as `object{...}&stdClass`, to `mixed`.
+        return $tagType !== null && $docType instanceof MixedType && (string)$tagType !== 'mixed';
     }
 
     /**
