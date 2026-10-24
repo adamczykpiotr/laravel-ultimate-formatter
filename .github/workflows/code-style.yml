@@ -33,7 +33,7 @@ jobs:
         uses: ramsey/composer-install@v4
 
       - name: Check formatting
-        run: vendor/bin/ultimate-formatter check
+        run: composer check
 
       - name: Run PHPStan
-        run: vendor/bin/ultimate-formatter analyse
+        run: composer analyse
