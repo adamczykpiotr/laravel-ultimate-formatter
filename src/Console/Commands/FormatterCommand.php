@@ -53,11 +53,7 @@ abstract class FormatterCommand extends Command
      */
     protected function configuredArguments(InputInterface $input, string $key): array
     {
-        // The binary runs without booting Laravel, so the config file is read directly.
-        $publishedConfigFile = "{$this->projectPath($input)}/" . self::PUBLISHED_CONFIG_FILE;
-        $publishedArguments = is_file($publishedConfigFile) ? data_get(require $publishedConfigFile, $key) : null;
-        $arguments = $publishedArguments ?? data_get(require self::DEFAULT_CONFIG_FILE, $key);
-
+        $arguments = $this->configuredValue($input, $key);
         if (is_array($arguments) === false) {
             throw new UnexpectedValueException("Config ultimate-formatter.{$key} must be a list of arguments.");
         }
@@ -68,6 +64,37 @@ abstract class FormatterCommand extends Command
                 : throw new UnexpectedValueException("Config ultimate-formatter.{$key} must contain only strings."))
             ->values()
             ->all();
+    }
+
+    /**
+     * @param InputInterface $input
+     * @param string $key
+     *
+     * @return bool
+     */
+    protected function configuredFlag(InputInterface $input, string $key): bool
+    {
+        $flag = $this->configuredValue($input, $key);
+        if (is_bool($flag) === false) {
+            throw new UnexpectedValueException("Config ultimate-formatter.{$key} must be a boolean.");
+        }
+
+        return $flag;
+    }
+
+    /**
+     * @param InputInterface $input
+     * @param string $key
+     *
+     * @return mixed
+     */
+    protected function configuredValue(InputInterface $input, string $key): mixed
+    {
+        // The binary runs without booting Laravel, so the config file is read directly.
+        $publishedConfigFile = "{$this->projectPath($input)}/" . self::PUBLISHED_CONFIG_FILE;
+        $publishedValue = is_file($publishedConfigFile) ? data_get(require $publishedConfigFile, $key) : null;
+
+        return $publishedValue ?? data_get(require self::DEFAULT_CONFIG_FILE, $key);
     }
 
     /**

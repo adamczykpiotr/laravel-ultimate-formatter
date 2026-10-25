@@ -30,10 +30,17 @@ class FormatCommand extends FormatterCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if ($input->getOption('models') === true) {
-            $ideHelperExitCode = $this->runPhpScript('artisan', $this->configuredArguments($input, 'format.ide-helper'), $input, $output);
-            if ($ideHelperExitCode !== self::SUCCESS) {
-                return $ideHelperExitCode;
+        $artisanSteps = [
+            'format.clear-cache' => $this->configuredFlag($input, 'pre.clear-cache'),
+            'format.migrate' => $this->configuredFlag($input, 'pre.migrate'),
+            'format.ide-helper' => $input->getOption('models') === true,
+        ];
+
+        $enabledSteps = collect($artisanSteps)->filter()->keys();
+        foreach ($enabledSteps as $step) {
+            $artisanExitCode = $this->runPhpScript('artisan', $this->configuredArguments($input, $step), $input, $output);
+            if ($artisanExitCode !== self::SUCCESS) {
+                return $artisanExitCode;
             }
         }
 
