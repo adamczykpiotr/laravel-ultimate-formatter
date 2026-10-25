@@ -19,11 +19,14 @@ class CheckCommand extends FormatterCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        // Both tools always run, so one CI pass reports every pending change.
+        // The fixer would check code Rector still has to change, so stop at the first failure like `format` does.
         $rectorExitCode = $this->runPhpScript('vendor/bin/rector', $this->configuredArguments($input, 'check.rector'), $input, $output);
-        $fixerExitCode = $this->runPhpScript('vendor/bin/php-cs-fixer', $this->configuredArguments($input, 'check.php-cs-fixer'), $input, $output);
+        if ($rectorExitCode !== self::SUCCESS) {
+            return self::FAILURE;
+        }
 
-        if ($rectorExitCode !== self::SUCCESS || $fixerExitCode !== self::SUCCESS) {
+        $fixerExitCode = $this->runPhpScript('vendor/bin/php-cs-fixer', $this->configuredArguments($input, 'check.php-cs-fixer'), $input, $output);
+        if ($fixerExitCode !== self::SUCCESS) {
             return self::FAILURE;
         }
 

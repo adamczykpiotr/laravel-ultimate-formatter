@@ -38,7 +38,7 @@ Existing files are skipped unless you pass `--force`. `.git-blame-ignore-revs` i
 
 ```bash
 vendor/bin/ultimate-formatter format    # Rector, then PHP CS Fixer
-vendor/bin/ultimate-formatter check     # dry run of both, fails on any change (CI)
+vendor/bin/ultimate-formatter check     # dry run, Rector first; stops at the first pending change (CI)
 ```
 
 `format --models` regenerates model docblocks with
