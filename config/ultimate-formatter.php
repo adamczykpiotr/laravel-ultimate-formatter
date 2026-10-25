@@ -3,11 +3,8 @@
 declare(strict_types=1);
 
 return [
-    // Artisan steps `format` runs before the tools, in this order. They need a booted app, so apps only.
     'pre' => [
-        // Clears cached config first, so the steps below see the current .env.
-        'clear_cache' => false,
-        // Brings the schema up to date, so ide-helper:models documents every column.
+        'clear-cache' => false,
         'migrate' => false,
     ],
     'format' => [

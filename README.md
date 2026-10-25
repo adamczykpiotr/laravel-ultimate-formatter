@@ -81,7 +81,7 @@ return RectorConfigFactory::create()
 
 ```php
 'pre' => [
-    'clear_cache' => true, // optimize:clear, so the steps below see the current .env
+    'clear-cache' => true, // optimize:clear, so the steps below see the current .env
     'migrate' => true,     // migrate --force, so ide-helper:models documents every column
 ],
 ```

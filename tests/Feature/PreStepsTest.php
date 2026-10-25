@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Tests\Feature;
 
+use AdamczykPiotr\UltimateFormatter\Console\Commands\CheckCommand;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\FormatCommand;
 use AdamczykPiotr\UltimateFormatter\Tests\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -27,7 +28,6 @@ class PreStepsTest extends TestCase
         $this->filesystem->remove($this->projectPath);
         $this->filesystem->mkdir($this->projectPath);
 
-        // Logs each call and fails on the command named in fail-on.txt, standing in for the real artisan.
         $this->filesystem->dumpFile("{$this->projectPath}/artisan", <<<'PHP'
             <?php
             $arguments = array_slice($argv, 1);
@@ -61,7 +61,7 @@ class PreStepsTest extends TestCase
      */
     public function test_runs_enabled_pre_steps_before_ide_helper(): void
     {
-        $this->publishConfig("['pre' => ['clear_cache' => true, 'migrate' => true]]");
+        $this->publishConfig("['pre' => ['clear-cache' => true, 'migrate' => true]]");
 
         $this->runFormat(['--models' => true]);
 
@@ -95,6 +95,19 @@ class PreStepsTest extends TestCase
 
         $this->assertSame(2, $exitCode);
         $this->assertSame("migrate --force\n", $this->filesystem->readFile("{$this->projectPath}/artisan.log"));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_check_never_runs_pre_steps(): void
+    {
+        $this->publishConfig("['pre' => ['clear-cache' => true, 'migrate' => true]]");
+
+        $tester = new CommandTester(new CheckCommand());
+        $tester->execute(['--path' => $this->projectPath]);
+
+        $this->assertFileDoesNotExist("{$this->projectPath}/artisan.log");
     }
 
     /**
