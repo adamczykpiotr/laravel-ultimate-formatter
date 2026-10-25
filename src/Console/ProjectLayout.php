@@ -11,6 +11,7 @@ enum ProjectLayout: string
 
     /**
      * @param string $path
+     *
      * @return self|null
      */
     public static function detect(string $path): self|null

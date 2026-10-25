@@ -12,6 +12,7 @@ class UltimateFormatterServiceProvider extends PackageServiceProvider
 {
     /**
      * @param Package $package
+     *
      * @return void
      */
     public function configurePackage(Package $package): void

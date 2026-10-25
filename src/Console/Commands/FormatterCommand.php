@@ -27,6 +27,7 @@ abstract class FormatterCommand extends Command
 
     /**
      * @param InputInterface $input
+     *
      * @return string
      */
     protected function projectPath(InputInterface $input): string
@@ -47,6 +48,7 @@ abstract class FormatterCommand extends Command
     /**
      * @param InputInterface $input
      * @param string $key
+     *
      * @return array<int, string>
      */
     protected function configuredArguments(InputInterface $input, string $key): array
@@ -73,6 +75,7 @@ abstract class FormatterCommand extends Command
      * @param array<int, string> $arguments
      * @param InputInterface $input
      * @param OutputInterface $output
+     *
      * @return int
      */
     protected function runPhpScript(string $script, array $arguments, InputInterface $input, OutputInterface $output): int

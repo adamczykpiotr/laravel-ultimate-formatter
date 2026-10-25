@@ -48,6 +48,7 @@ final class NormalizeMethodDocblockRector extends AbstractRector
 
     /**
      * @param Node $node
+     *
      * @return Node|null
      */
     public function refactor(Node $node): ?Node
@@ -110,6 +111,7 @@ AFTER,
     /**
      * @param ClassMethod $node
      * @param PhpDocInfo $phpDocInfo
+     *
      * @return bool
      */
     protected function normalizeReturnTag(ClassMethod $node, PhpDocInfo $phpDocInfo): bool
@@ -130,6 +132,7 @@ AFTER,
     /**
      * @param ClassMethod $node
      * @param PhpDocInfo $phpDocInfo
+     *
      * @return bool
      */
     protected function normalizeParamTags(ClassMethod $node, PhpDocInfo $phpDocInfo): bool
@@ -162,6 +165,7 @@ AFTER,
     /**
      * @param TypeNode|null $tagType
      * @param Type $docType
+     *
      * @return bool
      */
     protected function isUnmappedTag(TypeNode|null $tagType, Type $docType): bool
@@ -173,6 +177,7 @@ AFTER,
     /**
      * @param Type $docType
      * @param Type $nativeType
+     *
      * @return bool
      */
     protected function isAtLeastAsNarrow(Type $docType, Type $nativeType): bool
@@ -193,6 +198,7 @@ AFTER,
 
     /**
      * @param Node $typeNode
+     *
      * @return Type
      */
     protected function mapNativeType(Node $typeNode): Type
@@ -207,6 +213,7 @@ AFTER,
 
     /**
      * @param Type $type
+     *
      * @return Type
      */
     protected function printableType(Type $type): Type

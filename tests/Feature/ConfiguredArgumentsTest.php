@@ -69,6 +69,7 @@ class ConfiguredArgumentsTest extends TestCase
 
     /**
      * @param string $config
+     *
      * @return void
      */
     protected function publishConfig(string $config): void
@@ -78,6 +79,7 @@ class ConfiguredArgumentsTest extends TestCase
 
     /**
      * @param string $key
+     *
      * @return string
      */
     protected function resolveArguments(string $key): string
@@ -94,6 +96,7 @@ class ConfiguredArgumentsTest extends TestCase
             /**
              * @param InputInterface $input
              * @param OutputInterface $output
+             *
              * @return int
              */
             protected function execute(InputInterface $input, OutputInterface $output): int

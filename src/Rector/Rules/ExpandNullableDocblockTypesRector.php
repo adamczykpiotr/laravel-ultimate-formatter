@@ -27,6 +27,7 @@ final class ExpandNullableDocblockTypesRector extends AbstractRector
 
     /**
      * @param Node $node
+     *
      * @return Node|null
      */
     public function refactor(Node $node): ?Node
@@ -77,6 +78,7 @@ AFTER,
 
     /**
      * @param string $docText
+     *
      * @return string
      */
     protected function expandNullableTypes(string $docText): string

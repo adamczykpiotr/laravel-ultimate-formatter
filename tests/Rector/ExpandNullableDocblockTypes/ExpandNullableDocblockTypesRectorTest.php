@@ -12,6 +12,7 @@ class ExpandNullableDocblockTypesRectorTest extends AbstractRectorTestCase
 {
     /**
      * @param string $filePath
+     *
      * @return void
      */
     #[DataProvider('provideFixtures')]

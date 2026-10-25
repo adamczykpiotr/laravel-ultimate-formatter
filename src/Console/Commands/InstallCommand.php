@@ -31,6 +31,7 @@ class InstallCommand extends FormatterCommand
     /**
      * @param InputInterface $input
      * @param OutputInterface $output
+     *
      * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -66,6 +67,7 @@ class InstallCommand extends FormatterCommand
     /**
      * @param string $path
      * @param ProjectLayout $layout
+     *
      * @return array<string, string>
      */
     protected function renderFiles(string $path, ProjectLayout $layout): array
@@ -94,6 +96,7 @@ class InstallCommand extends FormatterCommand
     /**
      * @param string $stub
      * @param array<string, string> $replacements
+     *
      * @return string
      */
     protected function renderStub(string $stub, array $replacements): string
@@ -106,6 +109,7 @@ class InstallCommand extends FormatterCommand
     /**
      * @param string $path
      * @param list<string> $directories
+     *
      * @return string
      */
     protected function renderPhpPaths(string $path, array $directories): string
@@ -119,6 +123,7 @@ class InstallCommand extends FormatterCommand
     /**
      * @param string $path
      * @param list<string> $directories
+     *
      * @return string
      */
     protected function renderRectorSkip(string $path, array $directories): string

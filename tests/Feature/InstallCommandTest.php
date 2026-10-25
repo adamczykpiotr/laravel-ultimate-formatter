@@ -139,6 +139,7 @@ class InstallCommandTest extends TestCase
 
     /**
      * @param array<string, bool> $options
+     *
      * @return int
      */
     protected function runInstall(array $options = []): int
@@ -150,6 +151,7 @@ class InstallCommandTest extends TestCase
 
     /**
      * @param string $file
+     *
      * @return string
      */
     protected function readProjectFile(string $file): string

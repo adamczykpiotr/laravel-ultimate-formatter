@@ -13,6 +13,7 @@ class FixerConfigFactory
     /**
      * @param Finder $finder
      * @param non-empty-string $cacheFile
+     *
      * @return Config
      */
     public static function create(Finder $finder, string $cacheFile): Config
@@ -40,15 +41,7 @@ class FixerConfigFactory
             'phpdoc_indent' => true,
             'phpdoc_trim' => true,
             'phpdoc_trim_consecutive_blank_line_separation' => true,
-            'phpdoc_separation' => [
-                'groups' => [
-                    ['param', 'return', 'throws'],
-                    ['deprecated', 'link', 'see', 'since'],
-                    ['author', 'copyright', 'license'],
-                    ['category', 'package', 'subpackage'],
-                    ['property', 'property-read', 'property-write'],
-                ],
-            ],
+            'phpdoc_separation' => true,
             'phpdoc_single_line_var_spacing' => true,
             'phpdoc_order' => ['order' => ['param', 'return', 'throws']],
             'phpdoc_line_span' => ['property' => 'multi', 'method' => 'multi', 'const' => 'multi'],
