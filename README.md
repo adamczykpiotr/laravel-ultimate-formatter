@@ -75,6 +75,20 @@ return RectorConfigFactory::create()
     ->withSkip([SomeRector::class]);
 ```
 
+### Pre steps
+
+`format` can run artisan steps before the tools. Turn them on in `config/ultimate-formatter.php`:
+
+```php
+'pre' => [
+    'clear_cache' => true, // optimize:clear, so the steps below see the current .env
+    'migrate' => true,     // migrate --force, so ide-helper:models documents every column
+],
+```
+
+They run in that order, then `--models`, then Rector and PHP CS Fixer, and the first failing step stops
+the run. Their arguments live under `format.clear-cache` and `format.migrate`. `check` never runs them.
+
 Rector runs 4 parallel processes by default to stay within container memory limits. Raise it in
 `rector.php` with `->withParallel(maxNumberOfProcess: 8)` when the machine has room.
 
