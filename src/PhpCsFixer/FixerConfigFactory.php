@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\PhpCsFixer;
 
+use AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers\BlankLineAfterBannerCommentFixer;
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
+use PhpCsFixer\Fixer\FixerInterface;
 use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
 
 class FixerConfigFactory
@@ -23,9 +25,20 @@ class FixerConfigFactory
         return (new Config())
             ->setRiskyAllowed(true)
             ->setParallelConfig($parallelConfig)
+            ->registerCustomFixers(self::customFixers())
             ->setRules(self::rules())
             ->setFinder($finder)
             ->setCacheFile($cacheFile);
+    }
+
+    /**
+     * @return list<FixerInterface>
+     */
+    public static function customFixers(): array
+    {
+        return [
+            new BlankLineAfterBannerCommentFixer(),
+        ];
     }
 
     /**
@@ -143,6 +156,7 @@ class FixerConfigFactory
             ],
 
             'single_line_comment_style' => ['comment_types' => ['hash']],
+            'UltimateFormatter/blank_line_after_banner_comment' => true,
             'declare_strict_types' => true,
         ];
     }

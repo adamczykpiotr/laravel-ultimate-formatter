@@ -86,6 +86,8 @@ Rector runs 4 parallel processes by default to stay within container memory limi
   matched to the installed Laravel version.
 - **Docblocks.** Every method gets `@param`/`@return` tags in line with its signature. Narrower tags
   such as `non-empty-string` or `list<string>` are kept. `?string` in a tag becomes `string|null`.
+- **Banner comments.** A `/* | Section | */` banner is always followed by a blank line, via the
+  custom `UltimateFormatter/blank_line_after_banner_comment` fixer.
 
 ## Testing
 

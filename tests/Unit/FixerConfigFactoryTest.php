@@ -33,6 +33,7 @@ class FixerConfigFactoryTest extends TestCase
     {
         $fixerFactory = new FixerFactory();
         $fixerFactory->registerBuiltInFixers();
+        $fixerFactory->registerCustomFixers(FixerConfigFactory::customFixers());
         $fixerFactory->useRuleSet(new RuleSet(FixerConfigFactory::rules()));
 
         $deprecatedFixers = collect($fixerFactory->getFixers())
