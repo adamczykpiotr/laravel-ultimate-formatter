@@ -98,7 +98,7 @@ composer analyse
 
 ## Changelog
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+Releases are tagged automatically by semantic-release from the conventional commit titles merged into `main`. See [CHANGELOG](CHANGELOG.md) for what changed.
 
 ## License
 
