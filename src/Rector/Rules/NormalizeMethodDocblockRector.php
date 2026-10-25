@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Rector\Rules;
 
+use PhpParser\Comment;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
@@ -15,6 +16,7 @@ use PHPStan\Type\TypeTraverser;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger;
+use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\TypeComparator\TypeComparator;
 use Rector\Rector\AbstractRector;
 use Rector\StaticTypeMapper\StaticTypeMapper;
@@ -57,6 +59,7 @@ final class NormalizeMethodDocblockRector extends AbstractRector
             return null;
         }
 
+        $originalComments = array_values($node->getComments());
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
         $paramsChanged = $this->normalizeParamTags($node, $phpDocInfo);
         $returnChanged = $this->normalizeReturnTag($node, $phpDocInfo);
@@ -64,6 +67,8 @@ final class NormalizeMethodDocblockRector extends AbstractRector
         if ($returnChanged === false && $paramsChanged === false) {
             return null;
         }
+
+        $this->restoreBlankLinesAfterComments($node, $originalComments);
 
         return $node;
     }
@@ -106,6 +111,43 @@ AFTER,
                 ),
             ],
         );
+    }
+
+    /**
+     * @param ClassMethod $node
+     * @param list<Comment> $originalComments
+     *
+     * @return void
+     */
+    protected function restoreBlankLinesAfterComments(ClassMethod $node, array $originalComments): void
+    {
+        // A changed docblock makes Rector reprint every comment above the node joined by single newlines.
+        $comments = $node->getComments();
+
+        foreach ($originalComments as $index => $original) {
+            if (isset($comments[$index + 1]) === false) {
+                continue;
+            }
+
+            $nextStartLine = isset($originalComments[$index + 1])
+                ? $originalComments[$index + 1]->getStartLine()
+                : $node->getStartLine();
+            if ($nextStartLine - $original->getEndLine() < 2) {
+                continue;
+            }
+
+            $comments[$index] = new ($comments[$index]::class)(
+                $comments[$index]->getText() . "\n",
+                $comments[$index]->getStartLine(),
+                $comments[$index]->getStartFilePos(),
+                $comments[$index]->getStartTokenPos(),
+                $comments[$index]->getEndLine(),
+                $comments[$index]->getEndFilePos(),
+                $comments[$index]->getEndTokenPos(),
+            );
+        }
+
+        $node->setAttribute(AttributeKey::COMMENTS, $comments);
     }
 
     /**
