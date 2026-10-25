@@ -12,6 +12,7 @@ class TestCase extends Orchestra
 {
     /**
      * @param Application $app
+     *
      * @return list<class-string>
      */
     protected function getPackageProviders($app): array

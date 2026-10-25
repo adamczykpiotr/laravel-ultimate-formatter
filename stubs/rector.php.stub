@@ -1,0 +1,10 @@
+<?php
+
+declare(strict_types=1);
+
+use AdamczykPiotr\UltimateFormatter\Rector\RectorConfigFactory;
+
+return RectorConfigFactory::create()
+    ->withPaths([
+{{rector_paths}}
+    ]){{rector_skip}};
