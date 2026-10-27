@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.2.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.1.0...v1.2.0) (2026-10-27)
+
+
+### Features
+
+* upgrade PHPStan ^2.3 and Rector ^2.8 for performance improvements ([#8](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/8)) ([7a91efc](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/7a91efc99b6a287f75d922b8d5d06fec7ebcc5a1)), closes [#6](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/6)
+
 # [1.1.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.0.0...v1.1.0) (2026-10-25)
 
 
