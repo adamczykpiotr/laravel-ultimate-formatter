@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.2.0...v1.2.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* enforce LF line endings via .gitattributes ([#9](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/9)) ([3aa3740](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/3aa374084120ff79341af7bea32a68104c27dc74))
+
 # [1.2.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.1.0...v1.2.0) (2026-10-27)
 
 
