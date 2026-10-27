@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\PhpCsFixer;
 
 use AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers\BlankLineAfterBannerCommentFixer;
+use Fidry\CpuCoreCounter\CpuCoreCounter;
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
 use PhpCsFixer\Fixer\FixerInterface;
-use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
+use PhpCsFixer\Runner\Parallel\ParallelConfig;
 
 class FixerConfigFactory
 {
@@ -20,7 +21,7 @@ class FixerConfigFactory
      */
     public static function create(Finder $finder, string $cacheFile): Config
     {
-        $parallelConfig = ParallelConfigFactory::detect();
+        $parallelConfig = new ParallelConfig(self::availableCores());
 
         return (new Config())
             ->setRiskyAllowed(true)
@@ -29,6 +30,18 @@ class FixerConfigFactory
             ->setRules(self::rules())
             ->setFinder($finder)
             ->setCacheFile($cacheFile);
+    }
+
+    /**
+     * Unlike ParallelConfigFactory::detect(), no core is reserved for the orchestrating process: it
+     * mostly waits on workers, and reserving one drops 2-core CI runners to a sequential run.
+     * Cgroup quotas and KUBERNETES_CPU_LIMIT still cap the count.
+     *
+     * @return positive-int
+     */
+    public static function availableCores(): int
+    {
+        return (new CpuCoreCounter())->getAvailableForParallelisation()->availableCpus;
     }
 
     /**
