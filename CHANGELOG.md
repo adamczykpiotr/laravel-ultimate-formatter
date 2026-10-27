@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.3.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.2.1...v1.3.0) (2026-10-27)
+
+
+### Features
+
+* **perf:** run PHP CS Fixer on every available core ([#7](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/7)) ([f525212](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/f525212b8f1352534349d24ef232689747f12f93)), closes [#5](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/5)
+
 ## [1.2.1](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.2.0...v1.2.1) (2026-10-27)
 
 
