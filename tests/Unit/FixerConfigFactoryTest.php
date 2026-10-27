@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Tests\Unit;
 
 use AdamczykPiotr\UltimateFormatter\PhpCsFixer\FixerConfigFactory;
+use Fidry\CpuCoreCounter\CpuCoreCounter;
 use PhpCsFixer\Finder;
 use PhpCsFixer\Fixer\DeprecatedFixerInterface;
 use PhpCsFixer\Fixer\FixerInterface;
@@ -24,6 +25,22 @@ class FixerConfigFactoryTest extends TestCase
         $this->assertTrue($config->getRiskyAllowed());
         $this->assertSame('build/.php-cs-fixer.cache', $config->getCacheFile());
         $this->assertSame(FixerConfigFactory::rules(), $config->getRules());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_runs_in_parallel_on_every_available_core(): void
+    {
+        $cores = (new CpuCoreCounter())->getAvailableForParallelisation();
+
+        if ($cores->correctedCountLimit !== null) {
+            $this->markTestSkipped('A CPU quota caps the core count on this machine.');
+        }
+
+        $config = FixerConfigFactory::create(Finder::create(), 'build/.php-cs-fixer.cache');
+
+        $this->assertSame($cores->totalCoresCount, $config->getParallelConfig()->getMaxProcesses());
     }
 
     /**
