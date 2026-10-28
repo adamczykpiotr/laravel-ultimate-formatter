@@ -219,6 +219,10 @@ class InstallCommandTest extends TestCase
         $this->assertStringContainsString("php-version: '8.4'", $workflow);
         $this->assertStringContainsString('group: ${{ github.workflow }}-${{ github.ref }}', $workflow);
         $this->assertStringContainsString('run: composer check', $workflow);
+        $this->assertSame(
+            substr_count($workflow, 'uses:'),
+            preg_match_all('/uses: [\w.\/-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/m', $workflow),
+        );
     }
 
     /**
