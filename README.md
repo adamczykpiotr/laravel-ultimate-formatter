@@ -89,6 +89,17 @@ return RectorConfigFactory::create()
 They run in that order, then `--models`, then Rector and PHP CS Fixer, and the first failing step stops
 the run. Their arguments live under `format.clear-cache` and `format.migrate`. `check` never runs them.
 
+## Performance
+
+The package is tuned to make every run as fast as it can be:
+
+- **Rector turbo.** Requires Rector 2.8+, the release with the turbo performance improvements.
+- **PHPStan turbo.** Rector 2.8 pulls in PHPStan 2.3+, so its type analysis runs on the faster
+  PHPStan too.
+- **PHP CS Fixer on every core.** It runs in parallel on every available core, without reserving one
+  for the main process, so 2-core CI runners don't fall back to a sequential run. Cgroup quotas and
+  `KUBERNETES_CPU_LIMIT` still cap the count.
+
 Rector runs 4 parallel processes by default to stay within container memory limits. Raise it in
 `rector.php` with `->withParallel(maxNumberOfProcess: 8)` when the machine has room.
 
