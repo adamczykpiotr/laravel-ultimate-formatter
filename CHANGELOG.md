@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.4.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.3.0...v1.4.0) (2026-10-28)
+
+
+### Features
+
+* **install:** fill the gaps when installing in a package ([#14](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/14)) ([0830da3](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/0830da3597fa55b61c6e3fd25f23f746e81d5af6)), closes [#13](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/13)
+
 # [1.3.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.2.1...v1.3.0) (2026-10-27)
 
 
