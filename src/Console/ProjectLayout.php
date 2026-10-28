@@ -34,7 +34,7 @@ enum ProjectLayout: string
     {
         return match ($this) {
             self::APP => ['app', 'tests'],
-            self::PACKAGE => ['src', 'tests'],
+            self::PACKAGE => ['config', 'database', 'src', 'tests', 'workbench'],
         };
     }
 
@@ -45,7 +45,7 @@ enum ProjectLayout: string
     {
         return match ($this) {
             self::APP => ['app', 'database', 'tests'],
-            self::PACKAGE => ['src', 'tests'],
+            self::PACKAGE => ['config', 'database', 'src', 'tests', 'workbench'],
         };
     }
 
@@ -55,8 +55,7 @@ enum ProjectLayout: string
     public function rectorSkippedDirectories(): array
     {
         return match ($this) {
-            self::APP => ['database/migrations'],
-            self::PACKAGE => [],
+            self::APP, self::PACKAGE => ['database/migrations'],
         };
     }
 

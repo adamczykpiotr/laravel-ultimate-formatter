@@ -77,6 +77,170 @@ class InstallCommandTest extends TestCase
     /**
      * @return void
      */
+    public function test_package_paths_cover_config_database_and_workbench(): void
+    {
+        $this->filesystem->mkdir([
+            "{$this->projectPath}/config",
+            "{$this->projectPath}/database/migrations",
+            "{$this->projectPath}/src",
+            "{$this->projectPath}/workbench",
+        ]);
+
+        $this->runInstall();
+
+        $fixerConfig = $this->readProjectFile('.php-cs-fixer.php');
+        $rectorConfig = $this->readProjectFile('rector.php');
+        foreach (['config', 'database', 'src', 'workbench'] as $directory) {
+            $this->assertStringContainsString("__DIR__ . '/{$directory}',", $fixerConfig);
+            $this->assertStringContainsString("__DIR__ . '/{$directory}',", $rectorConfig);
+        }
+
+        $this->assertStringNotContainsString("__DIR__ . '/tests'", $fixerConfig);
+        $this->assertStringContainsString("->withSkip([\n        __DIR__ . '/database/migrations',", $rectorConfig);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_adds_missing_composer_scripts(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", <<<'JSON'
+            {
+                "name": "vendor/package",
+                "autoload-dev": {},
+                "scripts": {
+                    "check": "custom check"
+                }
+            }
+            JSON);
+
+        $this->runInstall();
+
+        $this->assertSame(<<<'JSON'
+            {
+                "name": "vendor/package",
+                "autoload-dev": {},
+                "scripts": {
+                    "check": "custom check",
+                    "format": "vendor/bin/ultimate-formatter format"
+                }
+            }
+
+            JSON, $this->readProjectFile('composer.json'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_adds_composer_scripts_section(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", '{"name": "vendor/package", "scripts": []}');
+
+        $this->runInstall();
+
+        $composer = json_decode($this->readProjectFile('composer.json'), true);
+        $this->assertSame([
+            'check' => 'vendor/bin/ultimate-formatter check',
+            'format' => 'vendor/bin/ultimate-formatter format',
+        ], data_get($composer, 'scripts'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_keeps_composer_json_with_existing_scripts(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $composer = '{"scripts":{"check":"a","format":"b"}}';
+        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", $composer);
+
+        $this->runInstall();
+
+        $this->assertSame($composer, $this->readProjectFile('composer.json'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_adds_export_ignores_in_a_package(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->dumpFile("{$this->projectPath}/.gitattributes", "# \"rector.php export-ignore\" in a comment\n/.github export-ignore\n/rector.php  export-ignore");
+
+        $this->runInstall(['--ci' => true]);
+
+        $this->assertSame(
+            "# \"rector.php export-ignore\" in a comment\n/.github export-ignore\n/rector.php  export-ignore\n/.php-cs-fixer.php export-ignore\n/.git-blame-ignore-revs export-ignore\n",
+            $this->readProjectFile('.gitattributes'),
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function test_creates_gitattributes_in_a_package(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+
+        $this->runInstall();
+
+        $this->assertSame(
+            "/.php-cs-fixer.php export-ignore\n/rector.php export-ignore\n/.git-blame-ignore-revs export-ignore\n",
+            $this->readProjectFile('.gitattributes'),
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function test_skips_export_ignores_in_an_app(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/app");
+        $this->filesystem->touch("{$this->projectPath}/artisan");
+
+        $this->runInstall();
+
+        $this->assertFileDoesNotExist("{$this->projectPath}/.gitattributes");
+    }
+
+    /**
+     * @return void
+     */
+    public function test_publishes_ci_workflow_on_the_minimum_php_version(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", '{"require": {"php": "^8.5 || ^8.4"}}');
+
+        $this->runInstall(['--ci' => true]);
+
+        $workflow = $this->readProjectFile('.github/workflows/code-style.yml');
+        $this->assertStringContainsString("php-version: '8.4'", $workflow);
+        $this->assertStringContainsString('group: ${{ github.workflow }}-${{ github.ref }}', $workflow);
+        $this->assertStringContainsString('run: composer check', $workflow);
+        $this->assertSame(
+            substr_count($workflow, 'uses:'),
+            preg_match_all('/uses: [\w.\/-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/m', $workflow),
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function test_ci_workflow_never_runs_below_the_formatter_minimum(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", '{"require": {"php": "^8.2"}}');
+
+        $this->runInstall(['--ci' => true]);
+
+        $this->assertStringContainsString("php-version: '8.3'", $this->readProjectFile('.github/workflows/code-style.yml'));
+    }
+
+    /**
+     * @return void
+     */
     public function test_generated_configs_load(): void
     {
         $this->filesystem->mkdir(["{$this->projectPath}/src", "{$this->projectPath}/tests"]);

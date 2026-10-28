@@ -29,10 +29,16 @@ The command detects the layout and fills in the paths that exist:
 | Layout | Detected by | PHP CS Fixer | Rector |
 |---|---|---|---|
 | Application | `artisan` and `app/` | `app`, `tests` | `app`, `database`, `tests` |
-| Package | `src/` | `src`, `tests` | `src`, `tests` |
+| Package | `src/` | `config`, `database`, `src`, `tests`, `workbench` | `config`, `database`, `src`, `tests`, `workbench` |
 
 It writes `.php-cs-fixer.php`, `rector.php` and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
-Existing files are skipped unless you pass `--force`. `.git-blame-ignore-revs` is never overwritten, since it holds your recorded commits. In an application, Rector skips `database/migrations`.
+Existing files are skipped unless you pass `--force`. `.git-blame-ignore-revs` is never overwritten, since it holds your recorded commits. Rector skips `database/migrations`.
+
+It also adds the `check` and `format` scripts to `composer.json`, keeping any scripts with those names that already exist.
+In a package it adds `export-ignore` entries to `.gitattributes` for the files it publishes, so they stay out of the dist archive.
+
+Pass `--ci` to also publish `.github/workflows/code-style.yml`, which runs `composer check` on the minimum PHP version in `composer.json`.
+Running PHP CS Fixer on a newer PHP could introduce syntax the minimum doesn't support.
 
 ## Usage
 
