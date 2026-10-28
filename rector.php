@@ -6,6 +6,7 @@ use AdamczykPiotr\UltimateFormatter\Rector\RectorConfigFactory;
 
 return RectorConfigFactory::create()
     ->withPaths([
+        __DIR__ . '/config',
         __DIR__ . '/src',
         __DIR__ . '/tests',
     ]);
