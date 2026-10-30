@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.5.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.4.0...v1.5.0) (2026-10-30)
+
+
+### Features
+
+* upgrade to Laravel 12.x minimum, cleanup unqualified `\self` types ([#25](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/25)) ([8358ab1](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/8358ab1e1aa5dc580cc93577aa0713b9dfa2e3c0))
+
 # [1.4.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.3.0...v1.4.0) (2026-10-28)
 
 
