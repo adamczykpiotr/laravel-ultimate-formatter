@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Tag;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Session;
 
 class TagService
 {
@@ -17,6 +20,8 @@ class TagService
         auth()->id();
         session()->get('tag');
         env('TAG_LIMIT');
+        redirect('/tags');
+        Session::get('tag');
 
         $tag = Tag::create(['name' => $name]);
         Tag::firstOrCreate(['name' => $name]);
@@ -31,5 +36,10 @@ class TagService
         }
 
         return $tag;
+    }
+
+    public function fetch(): Response
+    {
+        return Http::get('https://example.com/tags');
     }
 }

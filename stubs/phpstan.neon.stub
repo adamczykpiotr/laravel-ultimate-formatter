@@ -2,6 +2,6 @@ includes:
 {{phpstan_includes}}
 
 parameters:
-    level: 5
+    level: max
     paths:
 {{phpstan_paths}}

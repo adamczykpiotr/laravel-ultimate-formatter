@@ -25,8 +25,13 @@ parameters:
         -
             function:
                 - 'auth()'
+                - 'back()'
+                - 'cookie()'
+                - 'redirect()'
                 - 'request()'
+                - 'response()'
                 - 'session()'
+                - 'to_route()'
             message: 'services stay out of HTTP, so pass the value in as an argument instead.'
             errorIdentifier: 'ultimateFormatter.httpInService'
             disallowInMethods:
@@ -64,10 +69,6 @@ parameters:
                 - 'Illuminate\Database\Eloquent\Builder::updateOrCreate()'
             message: 'create the model with new, assign each property, then save().'
             errorIdentifier: 'ultimateFormatter.modelAttributeArray'
-        -
-            method: 'Illuminate\Support\Facades\Response::json()'
-            message: 'return through Resp::success() or Resp::error() instead.'
-            errorIdentifier: 'ultimateFormatter.responseJson'
         -
             method: 'Illuminate\Support\Facades\App::environment()'
             message: 'gate the behaviour on a config flag instead.'
