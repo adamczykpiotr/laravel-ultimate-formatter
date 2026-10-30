@@ -14,7 +14,7 @@ same way.
 composer require --dev adamczykpiotr/laravel-ultimate-formatter
 ```
 
-Supports Laravel 11–13 on PHP 8.3+.
+Supports Laravel 12–13 on PHP 8.3+.
 
 ## Setup
 
