@@ -16,6 +16,7 @@ abstract class FormatterCommand extends Command
 {
     protected const DEFAULT_CONFIG_FILE = __DIR__ . '/../../../config/ultimate-formatter.php';
     protected const PUBLISHED_CONFIG_FILE = 'config/ultimate-formatter.php';
+    protected const PHPSTAN_CONFIG_FILES = ['phpstan.neon', 'phpstan.neon.dist', 'phpstan.dist.neon'];
 
     /**
      * @return void
@@ -95,6 +96,18 @@ abstract class FormatterCommand extends Command
         $publishedValue = is_file($publishedConfigFile) ? data_get(require $publishedConfigFile, $key) : null;
 
         return $publishedValue ?? data_get(require self::DEFAULT_CONFIG_FILE, $key);
+    }
+
+    /**
+     * PHPStan reads the first of these that exists, so this returns the one it would use.
+     *
+     * @param string $path
+     *
+     * @return string|null
+     */
+    protected function phpstanConfigFile(string $path): string|null
+    {
+        return collect(self::PHPSTAN_CONFIG_FILES)->first(fn(string $file): bool => is_file("{$path}/{$file}"));
     }
 
     /**
