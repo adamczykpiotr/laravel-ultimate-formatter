@@ -6,6 +6,8 @@ parameters:
     paths:
         - src
         - tests
+    excludePaths:
+        - tests/PhpStan/Fixture
     tmpDir: build/phpstan
     checkOctaneCompatibility: true
     checkModelProperties: true
