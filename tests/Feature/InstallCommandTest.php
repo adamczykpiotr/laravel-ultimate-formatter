@@ -117,7 +117,7 @@ class InstallCommandTest extends TestCase
                 - vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon
 
             parameters:
-                level: 5
+                level: max
                 paths:
                     - app
                     - routes

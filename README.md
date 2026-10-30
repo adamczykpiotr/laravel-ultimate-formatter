@@ -35,7 +35,7 @@ The command detects the layout and fills in the paths that exist:
 It writes `.php-cs-fixer.php`, `rector.php`, `phpstan.neon` and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
 Existing files are skipped unless you pass `--force`. `.git-blame-ignore-revs` is never overwritten, since it holds your recorded commits. Rector skips `database/migrations`.
 
-`phpstan.neon` runs level 5 with the [PHPStan ruleset](#phpstan-ruleset). It is never written next to a
+`phpstan.neon` runs level `max` with the [PHPStan ruleset](#phpstan-ruleset). It is never written next to a
 `phpstan.neon.dist` or `phpstan.dist.neon`, since it would shadow that config. Add the ruleset to your
 existing config instead:
 
@@ -147,7 +147,8 @@ Banned calls, via [phpstan-disallowed-calls](https://github.com/spaze/phpstan-di
 
 - `sprintf`, the `array_*` functions (use Collections), `method_exists` (use interfaces),
   `file_exists` (use `File::exists`) and the `preg_*` functions (use `Str` / `Stringable`).
-- `auth()`, `request()` and `session()` inside `App\Services`.
+- `auth()`, `back()`, `cookie()`, `redirect()`, `request()`, `response()`, `session()` and `to_route()`
+  inside `App\Services`.
 - `Model::create`, `firstOrCreate`, `updateOrCreate`, `->fill()` and `->update()` on models.
 - `->refresh()`, `response()->json()`, `Log::shouldReceive()` (use `Log::spy()`) and
   `app()->environment()` (use config flags).
@@ -158,7 +159,8 @@ Architecture, via [phpat](https://github.com/carlosas/phpat):
   `{Action}Input` under `App\Dto\{Domain}\Input`, output DTOs are `{Name}Dto`.
 - Input DTOs extend `App\Dto\BaseInput`, custom exceptions extend `App\Exceptions\Base\BaseException`,
   and no class extends `FormRequest`.
-- Services don't depend on `Illuminate\Http`, and migrations don't depend on `App\Models`.
+- Services don't depend on `Illuminate\Http` (except the HTTP client), the session, or the `Auth`,
+  `Cookie`, `Redirect`, `Request`, `Response` and `Session` facades. Migrations don't depend on `App\Models`.
 
 Larastan's `noEnvCallsOutsideOfConfig` stays on, so `env()` is only called in `config/`.
 
