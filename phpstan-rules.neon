@@ -1,0 +1,83 @@
+parameters:
+    noEnvCallsOutsideOfConfig: true
+
+    disallowedFunctionCalls:
+        -
+            function: 'sprintf()'
+            message: 'interpolate named variables instead.'
+            errorIdentifier: 'ultimateFormatter.sprintf'
+        -
+            function: 'array_*()'
+            message: 'use a Collection pipeline instead.'
+            errorIdentifier: 'ultimateFormatter.arrayFunction'
+        -
+            function: 'method_exists()'
+            message: 'gate on an interface with instanceof instead.'
+            errorIdentifier: 'ultimateFormatter.methodExists'
+        -
+            function: 'file_exists()'
+            message: 'use File::exists() instead.'
+            errorIdentifier: 'ultimateFormatter.fileExists'
+        -
+            function: 'preg_*()'
+            message: 'use Str or Stringable instead.'
+            errorIdentifier: 'ultimateFormatter.pregFunction'
+        -
+            function:
+                - 'auth()'
+                - 'request()'
+                - 'session()'
+            message: 'services stay out of HTTP, so pass the value in as an argument instead.'
+            errorIdentifier: 'ultimateFormatter.httpInService'
+            disallowInMethods:
+                - 'App\Services\*::*()'
+
+    disallowedMethodCalls:
+        -
+            method:
+                - 'Illuminate\Database\Eloquent\Builder::create()'
+                - 'Illuminate\Database\Eloquent\Builder::firstOrCreate()'
+                - 'Illuminate\Database\Eloquent\Builder::updateOrCreate()'
+                - 'Illuminate\Database\Eloquent\Model::fill()'
+                - 'Illuminate\Database\Eloquent\Model::update()'
+            message: 'create the model with new, assign each property, then save().'
+            errorIdentifier: 'ultimateFormatter.modelAttributeArray'
+        -
+            method: 'Illuminate\Database\Eloquent\Model::refresh()'
+            message: 're-query the model with the eager-loads the response needs instead.'
+            errorIdentifier: 'ultimateFormatter.modelRefresh'
+        -
+            method: 'Illuminate\Contracts\Routing\ResponseFactory::json()'
+            message: 'return through Resp::success() or Resp::error() instead.'
+            errorIdentifier: 'ultimateFormatter.responseJson'
+        -
+            method: 'Illuminate\Contracts\Foundation\Application::environment()'
+            message: 'gate the behaviour on a config flag instead.'
+            errorIdentifier: 'ultimateFormatter.appEnvironment'
+
+    # Larastan resolves Model::create() and the facades to the class that declares the method, so the static calls are listed by that class.
+    disallowedStaticCalls:
+        -
+            method:
+                - 'Illuminate\Database\Eloquent\Builder::create()'
+                - 'Illuminate\Database\Eloquent\Builder::firstOrCreate()'
+                - 'Illuminate\Database\Eloquent\Builder::updateOrCreate()'
+            message: 'create the model with new, assign each property, then save().'
+            errorIdentifier: 'ultimateFormatter.modelAttributeArray'
+        -
+            method: 'Illuminate\Support\Facades\Response::json()'
+            message: 'return through Resp::success() or Resp::error() instead.'
+            errorIdentifier: 'ultimateFormatter.responseJson'
+        -
+            method: 'Illuminate\Support\Facades\App::environment()'
+            message: 'gate the behaviour on a config flag instead.'
+            errorIdentifier: 'ultimateFormatter.appEnvironment'
+
+rules:
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\NoLogShouldReceiveRule
+
+services:
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\ArchitectureRules
+        tags:
+            - phpat.test

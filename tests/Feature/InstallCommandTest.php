@@ -102,6 +102,67 @@ class InstallCommandTest extends TestCase
     /**
      * @return void
      */
+    public function test_installs_phpstan_config_with_the_ruleset(): void
+    {
+        $this->filesystem->mkdir(["{$this->projectPath}/app", "{$this->projectPath}/routes", "{$this->projectPath}/tests"]);
+        $this->filesystem->touch("{$this->projectPath}/artisan");
+
+        $this->runInstall();
+
+        $this->assertSame(<<<'NEON'
+            includes:
+                - vendor/larastan/larastan/extension.neon
+                - vendor/spaze/phpstan-disallowed-calls/extension.neon
+                - vendor/phpat/phpat/extension.neon
+                - vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon
+
+            parameters:
+                level: 5
+                paths:
+                    - app
+                    - routes
+                    - tests
+
+            NEON, $this->readProjectFile('phpstan.neon'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_phpstan_config_leaves_the_extensions_to_extension_installer(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", '{"require-dev": {"phpstan/extension-installer": "^1.4"}}');
+
+        $this->runInstall();
+
+        $this->assertStringContainsString(
+            "includes:\n    - vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon\n\n",
+            $this->readProjectFile('phpstan.neon'),
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function test_never_shadows_a_dist_phpstan_config(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->touch("{$this->projectPath}/phpstan.neon.dist");
+
+        $tester = new CommandTester(new InstallCommand());
+        $tester->execute(['--path' => $this->projectPath, '--force' => true]);
+
+        $this->assertFileDoesNotExist("{$this->projectPath}/phpstan.neon");
+        $this->assertStringContainsString(
+            'Skipped phpstan.neon, phpstan.neon.dist already exists. Include vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon in it',
+            $tester->getDisplay(),
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function test_adds_missing_composer_scripts(): void
     {
         $this->filesystem->mkdir("{$this->projectPath}/src");
@@ -172,7 +233,7 @@ class InstallCommandTest extends TestCase
         $this->runInstall(['--ci' => true]);
 
         $this->assertSame(
-            "# \"rector.php export-ignore\" in a comment\n/.github export-ignore\n/rector.php  export-ignore\n/.php-cs-fixer.php export-ignore\n/.git-blame-ignore-revs export-ignore\n",
+            "# \"rector.php export-ignore\" in a comment\n/.github export-ignore\n/rector.php  export-ignore\n/.php-cs-fixer.php export-ignore\n/phpstan.neon export-ignore\n/.git-blame-ignore-revs export-ignore\n",
             $this->readProjectFile('.gitattributes'),
         );
     }
@@ -187,7 +248,7 @@ class InstallCommandTest extends TestCase
         $this->runInstall();
 
         $this->assertSame(
-            "/.php-cs-fixer.php export-ignore\n/rector.php export-ignore\n/.git-blame-ignore-revs export-ignore\n",
+            "/.php-cs-fixer.php export-ignore\n/rector.php export-ignore\n/phpstan.neon export-ignore\n/.git-blame-ignore-revs export-ignore\n",
             $this->readProjectFile('.gitattributes'),
         );
     }
