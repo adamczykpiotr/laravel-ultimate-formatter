@@ -7,6 +7,10 @@ namespace AdamczykPiotr\UltimateFormatter\Rector\Rules;
 use PhpParser\Comment;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassMethod;
+use PHPStan\PhpDocParser\Ast\Node as DocNode;
+use PHPStan\PhpDocParser\Ast\NodeTraverser;
+use PHPStan\PhpDocParser\Ast\Type\FullyQualifiedNameNode;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NeverType;
@@ -16,8 +20,10 @@ use PHPStan\Type\TypeTraverser;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger;
+use Rector\Comments\NodeDocBlock\DocBlockUpdater;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\TypeComparator\TypeComparator;
+use Rector\PhpDocParser\PhpDocParser\PhpDocNodeVisitor\CallablePhpDocNodeVisitor;
 use Rector\Rector\AbstractRector;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\StaticTypeMapper\ValueObject\Type\SelfObjectType;
@@ -32,12 +38,14 @@ final class NormalizeMethodDocblockRector extends AbstractRector
      * @param PhpDocTypeChanger $phpDocTypeChanger
      * @param StaticTypeMapper $staticTypeMapper
      * @param TypeComparator $typeComparator
+     * @param DocBlockUpdater $docBlockUpdater
      */
     public function __construct(
         protected readonly PhpDocInfoFactory $phpDocInfoFactory,
         protected readonly PhpDocTypeChanger $phpDocTypeChanger,
         protected readonly StaticTypeMapper $staticTypeMapper,
         protected readonly TypeComparator $typeComparator,
+        protected readonly DocBlockUpdater $docBlockUpdater,
     ) {}
 
     /**
@@ -68,6 +76,7 @@ final class NormalizeMethodDocblockRector extends AbstractRector
             return null;
         }
 
+        $this->unqualifySelfNames($node, $phpDocInfo);
         $this->restoreBlankLinesAfterComments($node, $originalComments);
 
         return $node;
@@ -148,6 +157,32 @@ AFTER,
         }
 
         $node->setAttribute(AttributeKey::COMMENTS, $comments);
+    }
+
+    /**
+     * @param ClassMethod $node
+     * @param PhpDocInfo $phpDocInfo
+     *
+     * @return void
+     */
+    protected function unqualifySelfNames(ClassMethod $node, PhpDocInfo $phpDocInfo): void
+    {
+        // PHPStan 2.3.4+ prints object types fully qualified, which turns `self` into `\self`.
+        $changed = false;
+        $traverser = new NodeTraverser([new CallablePhpDocNodeVisitor(function (DocNode $docNode) use (&$changed): ?DocNode {
+            if ($docNode instanceof FullyQualifiedNameNode === false || $docNode->name !== 'self') {
+                return null;
+            }
+
+            $changed = true;
+
+            return new IdentifierTypeNode('self');
+        })]);
+        $traverser->traverse([$phpDocInfo->getPhpDocNode()]);
+
+        if ($changed) {
+            $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($node);
+        }
     }
 
     /**
