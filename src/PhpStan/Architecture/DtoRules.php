@@ -10,13 +10,16 @@ use PHPat\Test\PHPat;
 
 class DtoRules
 {
+    protected const INPUT_NAMESPACE_PATTERN = '/^App\\\Dto\\\.+\\\Input$/';
+    protected const BASE_INPUT_CLASS = 'App\Dto\BaseInput';
+
     /**
      * @return Rule
      */
     public function testInputDtosAreNamedInput(): Rule
     {
         return PHPat::rule()
-            ->classes(Selector::inNamespace('/^App\\\Dto\\\.+\\\Input$/', regex: true))
+            ->classes(Selector::inNamespace(self::INPUT_NAMESPACE_PATTERN, regex: true))
             ->should()->beNamed('/Input$/', regex: true)
             ->because('input DTOs are named {Action}Input and live under App\Dto\{Domain}\Input.');
     }
@@ -29,8 +32,8 @@ class DtoRules
         return PHPat::rule()
             ->classes(Selector::inNamespace('App\Dto'))
             ->excluding(
-                Selector::inNamespace('/^App\\\Dto\\\.+\\\Input$/', regex: true),
-                Selector::classname('App\Dto\BaseInput'),
+                Selector::inNamespace(self::INPUT_NAMESPACE_PATTERN, regex: true),
+                Selector::classname(self::BASE_INPUT_CLASS),
                 Selector::isAbstract(),
                 Selector::isInterface(),
             )
@@ -44,10 +47,10 @@ class DtoRules
     public function testInputDtosExtendBaseInput(): Rule
     {
         return PHPat::rule()
-            ->classes(Selector::inNamespace('/^App\\\Dto\\\.+\\\Input$/', regex: true))
+            ->classes(Selector::inNamespace(self::INPUT_NAMESPACE_PATTERN, regex: true))
             ->excluding(Selector::isAbstract())
             ->should()->extend()
-            ->classes(Selector::classname('App\Dto\BaseInput'))
+            ->classes(Selector::classname(self::BASE_INPUT_CLASS))
             ->because('BaseInput merges the manual validation rules with the inferred ones.');
     }
 }
