@@ -139,33 +139,11 @@ Rector runs 4 parallel processes by default to stay within container memory limi
 
 ### PHPStan ruleset
 
-`phpstan-rules.neon` reports the rules of the
-[laravel-pro-skills](https://github.com/adamczykpiotr/laravel-pro-skills) standard that a formatter
-can't fix safely. It reports them and leaves the fix to you.
-
-Banned calls, via [phpstan-disallowed-calls](https://github.com/spaze/phpstan-disallowed-calls):
-
-- `sprintf`, the `array_*` functions (use Collections), `method_exists` (use interfaces),
-  `file_exists` (use `File::exists`) and the `preg_*` functions (use `Str` / `Stringable`).
-- `auth()`, `back()`, `cookie()`, `redirect()`, `request()`, `response()`, `session()` and `to_route()`
-  inside `App\Services`.
-- `Model::create`, `firstOrCreate`, `updateOrCreate`, `->fill()` and `->update()` on models.
-- `->refresh()`, `response()->json()`, `Log::shouldReceive()` (use `Log::spy()`) and
-  `app()->environment()` (use config flags).
-
-Architecture, via [phpat](https://github.com/carlosas/phpat):
-
-- Classes are named `*Controller`, `*Service`, `*Resource` and `*Exception`. Input DTOs are
-  `{Action}Input` under `App\Dto\{Domain}\Input`, output DTOs are `{Name}Dto`.
-- Input DTOs extend `App\Dto\BaseInput`, custom exceptions extend `App\Exceptions\Base\BaseException`,
-  and no class extends `FormRequest`.
-- Services don't depend on `Illuminate\Http` (except the HTTP client), the session, or the `Auth`,
-  `Cookie`, `Redirect`, `Request`, `Response` and `Session` facades. Migrations don't depend on `App\Models`.
-
-Larastan's `noEnvCallsOutsideOfConfig` stays on, so `env()` is only called in `config/`.
-
-Each banned call has its own identifier, such as `ultimateFormatter.arrayFunction`, so a baseline or
-an `ignoreErrors` entry can target one rule.
+`phpstan-rules.neon` reports what the formatters can't fix safely: banned calls (`sprintf`, the
+`array_*` and `preg_*` functions, HTTP helpers in services, mass assignment, ...) and architecture
+rules (class naming, base classes, services kept out of HTTP, migrations kept off models). Each rule
+has its own identifier for baselines and `ignoreErrors`. See [docs/phpstan-ruleset.md](docs/phpstan-ruleset.md)
+for the full list.
 
 ## Testing
 
