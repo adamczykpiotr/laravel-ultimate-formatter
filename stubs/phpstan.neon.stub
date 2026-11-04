@@ -1,0 +1,7 @@
+includes:
+{{phpstan_includes}}
+
+parameters:
+    level: max
+    paths:
+{{phpstan_paths}}

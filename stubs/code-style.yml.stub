@@ -8,6 +8,7 @@ on:
       - 'composer.lock'
       - '.php-cs-fixer.php'
       - 'rector.php'
+      - 'phpstan.neon'
       - '.github/workflows/code-style.yml'
 
 concurrency:
