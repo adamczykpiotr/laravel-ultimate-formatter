@@ -45,7 +45,6 @@ class RulesetTest extends TestCase
             'app/Services/TagService.php:29 ultimateFormatter.modelAttributeArray',
             'app/Services/TagService.php:30 ultimateFormatter.modelAttributeArray',
             'app/Services/TagService.php:31 ultimateFormatter.modelAttributeArray',
-            'app/Services/TagService.php:32 ultimateFormatter.modelRefresh',
             'app/Services/TagService.php:34 ultimateFormatter.appEnvironment',
             'database/migrations/2026_01_01_000000_create_tags_table.php:12 phpat.testMigrationsDoNotDependOnModels',
             'tests/TagServiceTest.php:15 ultimateFormatter.logShouldReceive',

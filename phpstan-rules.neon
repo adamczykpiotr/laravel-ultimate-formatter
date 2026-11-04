@@ -79,6 +79,30 @@ rules:
 
 services:
     -
-        class: AdamczykPiotr\UltimateFormatter\PhpStan\ArchitectureRules
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ControllerRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\DtoRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ExceptionRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\MigrationRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\RequestRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ResourceRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ServiceRules
         tags:
             - phpat.test
