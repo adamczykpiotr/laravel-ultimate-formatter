@@ -48,10 +48,6 @@ parameters:
             message: 'create the model with new, assign each property, then save().'
             errorIdentifier: 'ultimateFormatter.modelAttributeArray'
         -
-            method: 'Illuminate\Database\Eloquent\Model::refresh()'
-            message: 're-query the model with the eager-loads the response needs instead.'
-            errorIdentifier: 'ultimateFormatter.modelRefresh'
-        -
             method: 'Illuminate\Contracts\Routing\ResponseFactory::json()'
             message: 'return through Resp::success() or Resp::error() instead.'
             errorIdentifier: 'ultimateFormatter.responseJson'
