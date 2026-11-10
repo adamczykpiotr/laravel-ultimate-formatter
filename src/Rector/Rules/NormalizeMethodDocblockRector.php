@@ -302,7 +302,7 @@ AFTER,
             return count($classNames) === 1 ? new FullyQualifiedNameNode($classNames[0]) : null;
         })]);
 
-        return implode('', array_map(strval(...), $traverser->traverse([$typeNode])));
+        return (string)$traverser->traverse([$typeNode])[0];
     }
 
     /**
