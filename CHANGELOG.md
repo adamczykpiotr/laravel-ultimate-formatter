@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.6.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.5.0...v1.6.0) (2026-11-10)
+
+
+### Features
+
+* import global classes, keep self/static/parent unqualified in all docblock tags ([#31](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/31)) ([1ddb46e](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/1ddb46eb4da9853e2cc725c0e3b7cd88f8f1be54))
+
 # [1.5.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.4.0...v1.5.0) (2026-10-30)
 
 
