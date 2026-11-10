@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Tests\PhpStan;
 
 use AdamczykPiotr\UltimateFormatter\Tests\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
 class RulesetTest extends TestCase
@@ -56,12 +57,48 @@ class RulesetTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function test_architecture_flags_turn_rules_off_and_on_between_runs(): void
+    {
+        $directory = sys_get_temp_dir() . '/' . uniqid('ultimate-formatter-flags-', true);
+        $filesystem = new Filesystem();
+        $filesystem->dumpFile("{$directory}/phpstan.neon", implode("\n", [
+            'includes:',
+            '    - ' . self::FIXTURE_DIRECTORY . '/phpstan.neon',
+            'parameters:',
+            "    ultimateFormatterConfigFile: {$directory}/ultimate-formatter.php",
+            '',
+        ]));
+
+        try {
+            $filesystem->dumpFile("{$directory}/ultimate-formatter.php", "<?php\n\nreturn ['architecture' => ['testServicesAreNamedService' => true, 'testServicesAreFinal' => false]];\n");
+            $flipped = $this->analyseFixtures("{$directory}/phpstan.neon");
+
+            // Same config and result cache: the second run must not reuse the first one's filtering.
+            $filesystem->dumpFile("{$directory}/ultimate-formatter.php", "<?php\n\nreturn ['architecture' => []];\n");
+            $defaults = $this->analyseFixtures("{$directory}/phpstan.neon");
+        } finally {
+            $filesystem->remove($directory);
+        }
+
+        $this->assertContains('app/Services/TagExporter.php:7 phpat.testServicesAreNamedService', $flipped);
+        $this->assertNotContains('app/Services/TagExporter.php:7 phpat.testServicesAreFinal', $flipped);
+        $this->assertContains('app/Services/TagExporter.php:7 phpat.testServicesAreReadonly', $flipped);
+
+        $this->assertNotContains('app/Services/TagExporter.php:7 phpat.testServicesAreNamedService', $defaults);
+        $this->assertContains('app/Services/TagExporter.php:7 phpat.testServicesAreFinal', $defaults);
+    }
+
+    /**
+     * @param string $configFile
+     *
      * @return array<int, string>
      */
-    protected function analyseFixtures(): array
+    protected function analyseFixtures(string $configFile = self::FIXTURE_DIRECTORY . '/phpstan.neon'): array
     {
         $process = new Process(
-            [PHP_BINARY, 'vendor/bin/phpstan', 'analyse', '--configuration=' . self::FIXTURE_DIRECTORY . '/phpstan.neon', '--error-format=json', '--no-progress'],
+            [PHP_BINARY, 'vendor/bin/phpstan', 'analyse', "--configuration={$configFile}", '--error-format=json', '--no-progress'],
             __DIR__ . '/../..',
             timeout: null,
         );

@@ -1,4 +1,9 @@
+parametersSchema:
+    ultimateFormatterConfigFile: string()
+
 parameters:
+    # The `architecture` flags in it turn the phpat rules below on and off.
+    ultimateFormatterConfigFile: %currentWorkingDirectory%/config/ultimate-formatter.php
     noEnvCallsOutsideOfConfig: true
 
     disallowedFunctionCalls:
@@ -74,6 +79,12 @@ rules:
     - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\NoLogShouldReceiveRule
 
 services:
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\ArchitectureFlags
+        arguments:
+            - %ultimateFormatterConfigFile%
+        tags:
+            - phpstan.ignoreErrorExtension
     -
         class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ControllerRules
         tags:

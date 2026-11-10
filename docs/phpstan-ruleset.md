@@ -46,12 +46,17 @@ Via [phpat](https://github.com/carlosas/phpat). The rules are grouped by area, o
 [`src/PhpStan/Architecture`](../src/PhpStan/Architecture). The identifier is `phpat.` followed by the
 method name, such as `phpat.testServicesDoNotDependOnHttp`.
 
+Each rule can be turned off by its method name under `architecture` in `config/ultimate-formatter.php`.
+See [Architecture rules](../README.md#architecture-rules).
+
 ### Controllers ([`ControllerRules`](../src/PhpStan/Architecture/ControllerRules.php))
 
 - `testControllersAreNamedController`: concrete classes in `App\Http\Controllers` are named `{Name}Controller`.
 
 ### Services ([`ServiceRules`](../src/PhpStan/Architecture/ServiceRules.php))
 
+- `testServicesAreNamedService`: concrete classes in `App\Services` are named `{Name}Service`. Off by
+  default, since `App\Services` often holds mappers and similar classes.
 - `testServicesAreFinal`: concrete classes in `App\Services` are `final`, except `Base{Name}` classes,
   which are meant to be extended. Services are composed, not extended.
 - `testServicesAreReadonly`: classes in `App\Services` are `readonly`, so they can't hold state between
@@ -60,9 +65,6 @@ method name, such as `phpat.testServicesDoNotDependOnHttp`.
 - `testServicesDoNotDependOnHttp`: services don't depend on `Illuminate\Http` (the HTTP client is
   allowed), the session, or the `Auth`, `Cookie`, `Redirect`, `Request`, `Response` and `Session`
   facades. A service behaves the same whether a controller, a job, a command or a test calls it.
-
-Services aren't required to be named `{Name}Service` for now, since `App\Services` also holds mappers
-and similar classes.
 
 Mockery can't mock a `final` or `readonly` class, so `$this->mock(TagService::class)` fails on a
 service. Add [dg/bypass-finals](https://github.com/dg/bypass-finals) as a dev dependency and register

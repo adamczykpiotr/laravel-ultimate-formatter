@@ -10,18 +10,17 @@ use PHPat\Test\PHPat;
 
 class ServiceRules
 {
-    // Off for now: App\Services also holds mappers and similar classes that aren't named {Name}Service.
-    // /**
-    //  * @return Rule
-    //  */
-    // public function testServicesAreNamedService(): Rule
-    // {
-    //     return PHPat::rule()
-    //         ->classes(Selector::inNamespace('App\Services'))
-    //         ->excluding(Selector::isAbstract(), Selector::isInterface(), Selector::isEnum())
-    //         ->should()->beNamed('/Service$/', regex: true)
-    //         ->because('services are named {Name}Service.');
-    // }
+    /**
+     * @return Rule
+     */
+    public function testServicesAreNamedService(): Rule
+    {
+        return PHPat::rule()
+            ->classes(Selector::inNamespace('App\Services'))
+            ->excluding(Selector::isAbstract(), Selector::isInterface(), Selector::isEnum())
+            ->should()->beNamed('/Service$/', regex: true)
+            ->because('services are named {Name}Service.');
+    }
 
     /**
      * @return Rule

@@ -19,4 +19,20 @@ return [
         'php-cs-fixer' => ['fix', '--dry-run', '--diff'],
         'phpstan' => ['analyse', '--no-progress', '--memory-limit=2G'],
     ],
+    // The PHPStan ruleset's architecture rules; set one to false to turn it off.
+    'architecture' => [
+        'testControllersAreNamedController' => true,
+        'testServicesAreNamedService' => false,
+        'testServicesAreFinal' => true,
+        'testServicesAreReadonly' => true,
+        'testServicesDoNotDependOnHttp' => true,
+        'testResourcesAreNamedResource' => true,
+        'testInputDtosAreNamedInput' => true,
+        'testInputDtosExtendBaseInput' => true,
+        'testOutputDtosAreNamedDto' => true,
+        'testNoClassExtendsFormRequest' => true,
+        'testExceptionsAreNamedException' => true,
+        'testExceptionsExtendBaseException' => true,
+        'testMigrationsDoNotDependOnModels' => true,
+    ],
 ];

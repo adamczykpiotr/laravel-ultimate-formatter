@@ -117,6 +117,22 @@ return RectorConfigFactory::create()
 They run in that order, then `--models`, then Rector and PHP CS Fixer, and the first failing step stops
 the run. Their arguments live under `format.clear-cache` and `format.migrate`. `check` never runs them.
 
+### Architecture rules
+
+Each architecture rule of the [PHPStan ruleset](#phpstan-ruleset) has a flag in
+`config/ultimate-formatter.php`. Set one to `false` to adopt the ruleset now and fix that rule later:
+
+```php
+'architecture' => [
+    'testServicesAreFinal' => false,
+    'testServicesAreNamedService' => true,
+],
+```
+
+Rules you leave out keep their default. `testServicesAreNamedService` is off by default, since
+`App\Services` often holds mappers and similar classes. PHPStan reads the flags on every run, so a
+change takes effect without clearing its cache.
+
 ## Performance
 
 The package is tuned to make every run as fast as it can be:
