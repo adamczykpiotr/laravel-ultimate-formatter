@@ -48,6 +48,11 @@ The ruleset configures Larastan, phpstan-disallowed-calls and phpat, so they hav
 `phpstan/extension-installer` they load themselves. Without it, the generated `phpstan.neon` includes
 their `extension.neon` files.
 
+The package requires Larastan `^3.13`. A project on an older Larastan gets upgraded with it, and the
+newer Larastan can report errors of its own, such as `larastan.relationExistence` or
+`method.alreadyNarrowedType`. Those come from Larastan, not from the ruleset, so fix or baseline them
+separately.
+
 It also adds the `check` and `format` scripts to `composer.json`, keeping any scripts with those names that already exist.
 In a package it adds `export-ignore` entries to `.gitattributes` for the files it publishes, so they stay out of the dist archive.
 

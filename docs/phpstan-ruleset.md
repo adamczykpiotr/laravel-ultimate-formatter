@@ -4,15 +4,20 @@
 [laravel-pro-skills](https://github.com/adamczykpiotr/laravel-pro-skills) standard that a formatter
 can't fix safely. It reports them and leaves the fix to you.
 
-Every rule has its own identifier, so a baseline or an `ignoreErrors` entry can target one rule:
+Every rule has its own identifier, so a baseline or an `ignoreErrors` entry can target one rule.
+Use that for deliberate exceptions. For example, controllers whose response shape outside consumers
+depend on can keep `response()->json()`:
 
 ```neon
 parameters:
     ignoreErrors:
         -
-            identifier: ultimateFormatter.arrayFunction
-            path: app/Support/LegacyImporter.php
+            identifier: ultimateFormatter.responseJson
+            paths:
+                - app/Http/Controllers/Integrations/*
 ```
+
+Paths are relative to the config file, and `*` matches subdirectories too.
 
 ## Banned calls
 
@@ -58,10 +63,12 @@ method name, such as `phpat.testServicesDoNotDependOnHttp`.
 
 ### DTOs ([`DtoRules`](../src/PhpStan/Architecture/DtoRules.php))
 
-- `testInputDtosAreNamedInput`: classes under `App\Dto\{Domain}\Input` are named `{Action}Input`.
-- `testInputDtosExtendBaseInput`: input DTOs extend `App\Dto\BaseInput`, which merges the manual
-  validation rules with the inferred ones.
-- `testOutputDtosAreNamedDto`: other classes in `App\Dto` are named `{Name}Dto`.
+- `testInputDtosAreNamedInput`: classes under `App\Dto\{Domain}\Input`, or a namespace below it such as
+  `App\Dto\{Domain}\Input\Fields`, are named `{Action}Input`.
+- `testInputDtosExtendBaseInput`: input DTOs extend `App\Dto\BaseInput`, directly or through an abstract
+  parent. `BaseInput` merges the manual validation rules with the inferred ones.
+- `testOutputDtosAreNamedDto`: other classes in `App\Dto` are named `{Name}Dto`. Casts and transformers,
+  classes that implement spatie/laravel-data's `Cast` or `Transformer`, are skipped wherever they live.
 
 ### Requests ([`RequestRules`](../src/PhpStan/Architecture/RequestRules.php))
 
