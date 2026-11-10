@@ -8,7 +8,7 @@ use Rector\Config\RectorConfig;
 // Mirrors the name importing in RectorConfigFactory, which shortens the fully qualified names the rule prints.
 return RectorConfig::configure()
     ->withImportNames(
-        importShortClasses: false,
+        importShortClasses: true,
         removeUnusedImports: true,
     )
     ->withRules([NormalizeMethodDocblockRector::class]);
