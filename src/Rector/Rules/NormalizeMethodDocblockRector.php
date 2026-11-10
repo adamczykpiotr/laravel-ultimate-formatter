@@ -9,6 +9,7 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\PhpDocParser\Ast\Node as DocNode;
 use PHPStan\PhpDocParser\Ast\NodeTraverser;
+use PHPStan\PhpDocParser\Ast\NodeVisitor\CloningVisitor;
 use PHPStan\PhpDocParser\Ast\Type\FullyQualifiedNameNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
@@ -26,8 +27,10 @@ use Rector\NodeTypeResolver\TypeComparator\TypeComparator;
 use Rector\PhpDocParser\PhpDocParser\PhpDocNodeVisitor\CallablePhpDocNodeVisitor;
 use Rector\Rector\AbstractRector;
 use Rector\StaticTypeMapper\StaticTypeMapper;
+use Rector\StaticTypeMapper\ValueObject\Type\AliasedObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\SelfObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\SelfStaticType;
+use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
@@ -203,7 +206,12 @@ AFTER,
             return false;
         }
 
-        return $this->phpDocTypeChanger->changeReturnType($node, $phpDocInfo, $this->printableType($nativeReturn));
+        $newReturn = $this->printableType($nativeReturn);
+        if ($this->changesPrintedType($node, $phpDocInfo->getReturnTagValue()?->type, $newReturn) === false) {
+            return false;
+        }
+
+        return $this->phpDocTypeChanger->changeReturnType($node, $phpDocInfo, $newReturn);
     }
 
     /**
@@ -231,12 +239,70 @@ AFTER,
                 continue;
             }
 
-            if ($this->phpDocTypeChanger->changeParamType($node, $phpDocInfo, $this->printableType($nativeParam), $param, $name)) {
+            $newParam = $this->printableType($nativeParam);
+            if ($this->changesPrintedType($node, $phpDocInfo->getParamTagValueByName($name)?->type, $newParam) === false) {
+                continue;
+            }
+
+            if ($this->phpDocTypeChanger->changeParamType($node, $phpDocInfo, $newParam, $param, $name)) {
                 $changed = true;
             }
         }
 
         return $changed;
+    }
+
+    /**
+     * @param ClassMethod $node
+     * @param TypeNode|null $tagType
+     * @param Type $newType
+     *
+     * @return bool
+     */
+    protected function changesPrintedType(ClassMethod $node, TypeNode|null $tagType, Type $newType): bool
+    {
+        if ($tagType === null) {
+            return true;
+        }
+
+        // A type that differs only in how its class names are written prints back to the same tag once names are imported.
+        $newTagType = $this->staticTypeMapper->mapPHPStanTypeToPHPStanPhpDocTypeNode($newType);
+
+        return $this->comparableTypeString($node, $tagType) !== $this->comparableTypeString($node, $newTagType);
+    }
+
+    /**
+     * @param ClassMethod $node
+     * @param TypeNode $typeNode
+     *
+     * @return string
+     */
+    protected function comparableTypeString(ClassMethod $node, TypeNode $typeNode): string
+    {
+        $traverser = new NodeTraverser([new CloningVisitor(), new CallablePhpDocNodeVisitor(function (DocNode $docNode) use ($node): ?DocNode {
+            if ($docNode instanceof FullyQualifiedNameNode) {
+                return $docNode->name === 'self' ? new IdentifierTypeNode('self') : null;
+            }
+
+            if ($docNode instanceof IdentifierTypeNode === false || in_array($docNode->name, ['self', 'static', 'parent'], true)) {
+                return null;
+            }
+
+            if (str_starts_with($docNode->name, '\\')) {
+                return new FullyQualifiedNameNode($docNode->name);
+            }
+
+            $type = $this->staticTypeMapper->mapPHPStanPhpDocTypeNodeToPHPStanType($docNode, $node);
+            if ($type instanceof ShortenedObjectType || $type instanceof AliasedObjectType) {
+                return new FullyQualifiedNameNode($type->getFullyQualifiedName());
+            }
+
+            $classNames = $type->getObjectClassNames();
+
+            return count($classNames) === 1 ? new FullyQualifiedNameNode($classNames[0]) : null;
+        })]);
+
+        return implode('', array_map(strval(...), $traverser->traverse([$typeNode])));
     }
 
     /**
