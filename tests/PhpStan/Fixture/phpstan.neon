@@ -7,4 +7,6 @@ parameters:
         - app
         - database
         - tests
+    scanFiles:
+        - stubs/laravel-data.php
     tmpDir: ../../../build/phpstan-fixture

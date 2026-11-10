@@ -17,6 +17,8 @@ class RulesetTest extends TestCase
     public function test_reports_every_banned_call_and_architecture_violation(): void
     {
         $this->assertSame([
+            'app/Dto/Tag/Input/Fields/TagIcon.php:7 phpat.testInputDtosAreNamedInput',
+            'app/Dto/Tag/Input/Fields/TagIcon.php:7 phpat.testInputDtosExtendBaseInput',
             'app/Dto/Tag/Input/TagRename.php:7 phpat.testInputDtosAreNamedInput',
             'app/Dto/Tag/Input/TagRename.php:7 phpat.testInputDtosExtendBaseInput',
             'app/Dto/Tag/TagSummary.php:7 phpat.testOutputDtosAreNamedDto',
