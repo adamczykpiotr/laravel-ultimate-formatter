@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.6.0...v1.6.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* Rector 2.8.2 minimum, stop NormalizeMethodDocblockRector reporting no-op changes ([#30](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/30)) ([0620fcf](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/0620fcf4816f93c25138f448f4ff9aaeda628ae6))
+
 # [1.6.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.5.0...v1.6.0) (2026-11-10)
 
 
