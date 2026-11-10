@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 
-class TagService
+final readonly class TagService
 {
     public function create(Request $request): Tag
     {

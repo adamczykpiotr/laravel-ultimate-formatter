@@ -10,16 +10,47 @@ use PHPat\Test\PHPat;
 
 class ServiceRules
 {
+    // Off for now: App\Services also holds mappers and similar classes that aren't named {Name}Service.
+    // /**
+    //  * @return Rule
+    //  */
+    // public function testServicesAreNamedService(): Rule
+    // {
+    //     return PHPat::rule()
+    //         ->classes(Selector::inNamespace('App\Services'))
+    //         ->excluding(Selector::isAbstract(), Selector::isInterface(), Selector::isEnum())
+    //         ->should()->beNamed('/Service$/', regex: true)
+    //         ->because('services are named {Name}Service.');
+    // }
+
     /**
      * @return Rule
      */
-    public function testServicesAreNamedService(): Rule
+    public function testServicesAreFinal(): Rule
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace('App\Services'))
-            ->excluding(Selector::isAbstract(), Selector::isInterface(), Selector::isEnum())
-            ->should()->beNamed('/Service$/', regex: true)
-            ->because('services are named {Name}Service.');
+            ->excluding(
+                Selector::isAbstract(),
+                Selector::isInterface(),
+                Selector::isEnum(),
+                Selector::isTrait(),
+                Selector::classname('/\\\\Base[A-Z][^\\\\]*$/', regex: true),
+            )
+            ->should()->beFinal()
+            ->because('services are composed, not extended; only a Base{Name} class is meant to be extended.');
+    }
+
+    /**
+     * @return Rule
+     */
+    public function testServicesAreReadonly(): Rule
+    {
+        return PHPat::rule()
+            ->classes(Selector::inNamespace('App\Services'))
+            ->excluding(Selector::isInterface(), Selector::isEnum(), Selector::isTrait())
+            ->should()->beReadonly()
+            ->because('services are stateless, so the same instance can serve every call.');
     }
 
     /**

@@ -52,10 +52,27 @@ method name, such as `phpat.testServicesDoNotDependOnHttp`.
 
 ### Services ([`ServiceRules`](../src/PhpStan/Architecture/ServiceRules.php))
 
-- `testServicesAreNamedService`: concrete classes in `App\Services` are named `{Name}Service`.
+- `testServicesAreFinal`: concrete classes in `App\Services` are `final`, except `Base{Name}` classes,
+  which are meant to be extended. Services are composed, not extended.
+- `testServicesAreReadonly`: classes in `App\Services` are `readonly`, so they can't hold state between
+  calls. That includes `Base{Name}` and abstract classes, since a readonly class can only extend a readonly
+  parent.
 - `testServicesDoNotDependOnHttp`: services don't depend on `Illuminate\Http` (the HTTP client is
   allowed), the session, or the `Auth`, `Cookie`, `Redirect`, `Request`, `Response` and `Session`
   facades. A service behaves the same whether a controller, a job, a command or a test calls it.
+
+Services aren't required to be named `{Name}Service` for now, since `App\Services` also holds mappers
+and similar classes.
+
+Mockery can't mock a `final` or `readonly` class, so `$this->mock(TagService::class)` fails on a
+service. Add [dg/bypass-finals](https://github.com/dg/bypass-finals) as a dev dependency and register
+it in `phpunit.xml`. It removes both keywords while the tests run:
+
+```xml
+<extensions>
+    <bootstrap class="DG\BypassFinals\PHPUnitExtension"/>
+</extensions>
+```
 
 ### Resources ([`ResourceRules`](../src/PhpStan/Architecture/ResourceRules.php))
 
