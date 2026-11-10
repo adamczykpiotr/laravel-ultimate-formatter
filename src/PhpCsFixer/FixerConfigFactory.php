@@ -85,7 +85,7 @@ class FixerConfigFactory
             'phpdoc_list_type' => true,
             'fully_qualified_strict_types' => [
                 'import_symbols' => true,
-                'phpdoc_tags' => ['param', 'return', 'throws', 'var', 'type'],
+                'phpdoc_tags' => ['param', 'return', 'throws', 'var', 'type', 'property', 'property-read', 'property-write', 'method', 'mixin'],
             ],
             'align_multiline_comment' => ['comment_type' => 'phpdocs_only'],
 

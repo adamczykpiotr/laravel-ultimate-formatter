@@ -21,7 +21,7 @@ class RectorConfigFactory
         return RectorConfig::configure()
             ->withParallel(maxNumberOfProcess: 4)
             ->withImportNames(
-                importShortClasses: false,
+                importShortClasses: true,
                 removeUnusedImports: true,
             )
             ->withComposerBased(laravel: true)
