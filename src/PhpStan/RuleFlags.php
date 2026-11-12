@@ -10,7 +10,7 @@ use PHPStan\Analyser\Error;
 use PHPStan\Analyser\IgnoreErrorExtension;
 use PHPStan\Analyser\Scope;
 
-class ArchitectureFlags implements IgnoreErrorExtension
+class RuleFlags implements IgnoreErrorExtension
 {
     protected const DEFAULT_CONFIG_FILE = __DIR__ . '/../../config/ultimate-formatter.php';
 
@@ -26,7 +26,10 @@ class ArchitectureFlags implements IgnoreErrorExtension
         protected readonly string $publishedConfigFile,
     ) {
         // Read on every run, not baked into PHPStan's cached container, so flipping a flag takes effect at once.
-        $this->rules = $this->architectureRules($publishedConfigFile) + $this->architectureRules(self::DEFAULT_CONFIG_FILE);
+        $defaults = $this->flags(self::DEFAULT_CONFIG_FILE);
+
+        // Only the ruleset's own rules can be turned off; any other error is left to ignoreErrors.
+        $this->rules = array_intersect_key($this->flags($publishedConfigFile), $defaults) + $defaults;
     }
 
     /**
@@ -39,7 +42,7 @@ class ArchitectureFlags implements IgnoreErrorExtension
     public function shouldIgnore(Error $error, Node $node, Scope $scope): bool
     {
         $identifier = (string)$error->getIdentifier();
-        if (str_starts_with($identifier, 'phpat.') === false) {
+        if (isset($this->rules[$identifier]) === false) {
             return false;
         }
 
@@ -48,7 +51,7 @@ class ArchitectureFlags implements IgnoreErrorExtension
             $scope->trackFileDependency($this->publishedConfigFile);
         }
 
-        return ($this->rules[str_replace('phpat.', '', $identifier)] ?? true) === false;
+        return $this->rules[$identifier] === false;
     }
 
     /**
@@ -56,11 +59,11 @@ class ArchitectureFlags implements IgnoreErrorExtension
      *
      * @return array<string, bool>
      */
-    protected function architectureRules(string $configFile): array
+    protected function flags(string $configFile): array
     {
         // PHPStan runs without Laravel, so the config file is read directly.
         $config = is_file($configFile) ? require $configFile : [];
-        $rules = is_array($config) && is_array($config['architecture'] ?? null) ? $config['architecture'] : [];
+        $rules = is_array($config) && is_array($config['phpstan-rules'] ?? null) ? $config['phpstan-rules'] : [];
 
         $flags = [];
         foreach ($rules as $rule => $enabled) {

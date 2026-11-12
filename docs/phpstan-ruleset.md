@@ -4,9 +4,11 @@
 [laravel-pro-skills](https://github.com/adamczykpiotr/laravel-pro-skills) standard that a formatter
 can't fix safely. It reports them and leaves the fix to you.
 
-Every rule has its own identifier, so a baseline or an `ignoreErrors` entry can target one rule.
-Use that for deliberate exceptions. For example, controllers whose response shape outside consumers
-depend on can keep `response()->json()`:
+Every rule has its own identifier. To turn a rule off everywhere, set its identifier to `false` under
+`phpstan-rules` in `config/ultimate-formatter.php` (see [Ruleset flags](../README.md#ruleset-flags)).
+For deliberate exceptions in some paths, target the identifier with a baseline or an `ignoreErrors`
+entry. For example, controllers whose response shape outside consumers depend on can keep
+`response()->json()`:
 
 ```neon
 parameters:
@@ -45,9 +47,6 @@ Larastan's `noEnvCallsOutsideOfConfig` stays on, so `env()` is only called in `c
 Via [phpat](https://github.com/carlosas/phpat). The rules are grouped by area, one class each, in
 [`src/PhpStan/Architecture`](../src/PhpStan/Architecture). The identifier is `phpat.` followed by the
 method name, such as `phpat.testServicesDoNotDependOnHttp`.
-
-Each rule can be turned off by its method name under `architecture` in `config/ultimate-formatter.php`.
-See [Architecture rules](../README.md#architecture-rules).
 
 ### Controllers ([`ControllerRules`](../src/PhpStan/Architecture/ControllerRules.php))
 

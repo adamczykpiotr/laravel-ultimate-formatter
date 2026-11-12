@@ -59,7 +59,7 @@ class RulesetTest extends TestCase
     /**
      * @return void
      */
-    public function test_architecture_flags_turn_rules_off_and_on_between_runs(): void
+    public function test_rule_flags_turn_rules_off_and_on_between_runs(): void
     {
         $directory = sys_get_temp_dir() . '/' . uniqid('ultimate-formatter-flags-', true);
         $filesystem = new Filesystem();
@@ -72,11 +72,11 @@ class RulesetTest extends TestCase
         ]));
 
         try {
-            $filesystem->dumpFile("{$directory}/ultimate-formatter.php", "<?php\n\nreturn ['architecture' => ['testServicesAreNamedService' => true, 'testServicesAreFinal' => false]];\n");
+            $filesystem->dumpFile("{$directory}/ultimate-formatter.php", "<?php\n\nreturn ['phpstan-rules' => ['phpat.testServicesAreNamedService' => true, 'phpat.testServicesAreFinal' => false, 'ultimateFormatter.sprintf' => false]];\n");
             $flipped = $this->analyseFixtures("{$directory}/phpstan.neon");
 
             // Same config and result cache: the second run must not reuse the first one's filtering.
-            $filesystem->dumpFile("{$directory}/ultimate-formatter.php", "<?php\n\nreturn ['architecture' => []];\n");
+            $filesystem->dumpFile("{$directory}/ultimate-formatter.php", "<?php\n\nreturn ['phpstan-rules' => []];\n");
             $defaults = $this->analyseFixtures("{$directory}/phpstan.neon");
         } finally {
             $filesystem->remove($directory);
@@ -85,9 +85,12 @@ class RulesetTest extends TestCase
         $this->assertContains('app/Services/TagExporter.php:7 phpat.testServicesAreNamedService', $flipped);
         $this->assertNotContains('app/Services/TagExporter.php:7 phpat.testServicesAreFinal', $flipped);
         $this->assertContains('app/Services/TagExporter.php:7 phpat.testServicesAreReadonly', $flipped);
+        $this->assertNotContains('app/Services/TagService.php:17 ultimateFormatter.sprintf', $flipped);
+        $this->assertContains('app/Services/TagService.php:18 ultimateFormatter.arrayFunction', $flipped);
 
         $this->assertNotContains('app/Services/TagExporter.php:7 phpat.testServicesAreNamedService', $defaults);
         $this->assertContains('app/Services/TagExporter.php:7 phpat.testServicesAreFinal', $defaults);
+        $this->assertContains('app/Services/TagService.php:17 ultimateFormatter.sprintf', $defaults);
     }
 
     /**
