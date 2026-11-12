@@ -25,34 +25,34 @@ class RulesetTest extends TestCase
             'app/Dto/Tag/TagSummary.php:7 phpat.testOutputDtosAreNamedDto',
             'app/Exceptions/TagLocked.php:9 phpat.testExceptionsAreNamedException',
             'app/Exceptions/TagLocked.php:9 phpat.testExceptionsExtendBaseException',
-            'app/Http/Controllers/TagController.php:13 ultimateFormatter.responseJson',
+            'app/Http/Controllers/TagController.php:13 ultimateFormatter.disallowResponseJson',
             'app/Http/Controllers/TagHandler.php:7 phpat.testControllersAreNamedController',
             'app/Http/Requests/TagStoreRequest.php:9 phpat.testNoClassExtendsFormRequest',
             'app/Http/Resources/TagPayload.php:9 phpat.testResourcesAreNamedResource',
             'app/Services/TagExporter.php:7 phpat.testServicesAreFinal',
             'app/Services/TagExporter.php:7 phpat.testServicesAreReadonly',
             'app/Services/TagService.php:15 phpat.testServicesDoNotDependOnHttp',
-            'app/Services/TagService.php:17 ultimateFormatter.httpInService',
-            'app/Services/TagService.php:17 ultimateFormatter.sprintf',
-            'app/Services/TagService.php:18 ultimateFormatter.arrayFunction',
-            'app/Services/TagService.php:19 ultimateFormatter.fileExists',
-            'app/Services/TagService.php:19 ultimateFormatter.methodExists',
-            'app/Services/TagService.php:19 ultimateFormatter.pregFunction',
-            'app/Services/TagService.php:20 ultimateFormatter.httpInService',
-            'app/Services/TagService.php:21 ultimateFormatter.httpInService',
+            'app/Services/TagService.php:17 ultimateFormatter.disallowHttpHelpersInServices',
+            'app/Services/TagService.php:17 ultimateFormatter.disallowSprintf',
+            'app/Services/TagService.php:18 ultimateFormatter.disallowNativeArrayFunctions',
+            'app/Services/TagService.php:19 ultimateFormatter.disallowFileExists',
+            'app/Services/TagService.php:19 ultimateFormatter.disallowMethodExists',
+            'app/Services/TagService.php:19 ultimateFormatter.disallowNativePregFunctions',
+            'app/Services/TagService.php:20 ultimateFormatter.disallowHttpHelpersInServices',
+            'app/Services/TagService.php:21 ultimateFormatter.disallowHttpHelpersInServices',
             'app/Services/TagService.php:22 larastan.noEnvCallsOutsideOfConfig',
-            'app/Services/TagService.php:23 ultimateFormatter.httpInService',
+            'app/Services/TagService.php:23 ultimateFormatter.disallowHttpHelpersInServices',
             'app/Services/TagService.php:24 phpat.testServicesDoNotDependOnHttp',
-            'app/Services/TagService.php:26 ultimateFormatter.modelAttributeArray',
-            'app/Services/TagService.php:27 ultimateFormatter.modelAttributeArray',
-            'app/Services/TagService.php:28 ultimateFormatter.modelAttributeArray',
-            'app/Services/TagService.php:29 ultimateFormatter.modelAttributeArray',
-            'app/Services/TagService.php:30 ultimateFormatter.modelAttributeArray',
-            'app/Services/TagService.php:31 ultimateFormatter.modelAttributeArray',
-            'app/Services/TagService.php:34 ultimateFormatter.appEnvironment',
+            'app/Services/TagService.php:26 ultimateFormatter.disallowModelMassAssignment',
+            'app/Services/TagService.php:27 ultimateFormatter.disallowModelMassAssignment',
+            'app/Services/TagService.php:28 ultimateFormatter.disallowModelMassAssignment',
+            'app/Services/TagService.php:29 ultimateFormatter.disallowModelMassAssignment',
+            'app/Services/TagService.php:30 ultimateFormatter.disallowModelMassAssignment',
+            'app/Services/TagService.php:31 ultimateFormatter.disallowModelMassAssignment',
+            'app/Services/TagService.php:34 ultimateFormatter.disallowAppEnvironment',
             'database/migrations/2026_01_01_000000_create_tags_table.php:12 phpat.testMigrationsDoNotDependOnModels',
-            'tests/TagServiceTest.php:15 ultimateFormatter.logShouldReceive',
-            'tests/TagServiceTest.php:19 ultimateFormatter.appEnvironment',
+            'tests/TagServiceTest.php:15 ultimateFormatter.disallowLogShouldReceive',
+            'tests/TagServiceTest.php:19 ultimateFormatter.disallowAppEnvironment',
         ], $this->analyseFixtures());
     }
 
@@ -72,7 +72,7 @@ class RulesetTest extends TestCase
         ]));
 
         try {
-            $filesystem->dumpFile("{$directory}/ultimate-formatter.php", "<?php\n\nreturn ['phpstan-rules' => ['phpat.testServicesAreNamedService' => true, 'phpat.testServicesAreFinal' => false, 'ultimateFormatter.sprintf' => false]];\n");
+            $filesystem->dumpFile("{$directory}/ultimate-formatter.php", "<?php\n\nreturn ['phpstan-rules' => ['phpat.testServicesAreNamedService' => true, 'phpat.testServicesAreFinal' => false, 'ultimateFormatter.disallowSprintf' => false]];\n");
             $flipped = $this->analyseFixtures("{$directory}/phpstan.neon");
 
             // Same config and result cache: the second run must not reuse the first one's filtering.
@@ -85,12 +85,12 @@ class RulesetTest extends TestCase
         $this->assertContains('app/Services/TagExporter.php:7 phpat.testServicesAreNamedService', $flipped);
         $this->assertNotContains('app/Services/TagExporter.php:7 phpat.testServicesAreFinal', $flipped);
         $this->assertContains('app/Services/TagExporter.php:7 phpat.testServicesAreReadonly', $flipped);
-        $this->assertNotContains('app/Services/TagService.php:17 ultimateFormatter.sprintf', $flipped);
-        $this->assertContains('app/Services/TagService.php:18 ultimateFormatter.arrayFunction', $flipped);
+        $this->assertNotContains('app/Services/TagService.php:17 ultimateFormatter.disallowSprintf', $flipped);
+        $this->assertContains('app/Services/TagService.php:18 ultimateFormatter.disallowNativeArrayFunctions', $flipped);
 
         $this->assertNotContains('app/Services/TagExporter.php:7 phpat.testServicesAreNamedService', $defaults);
         $this->assertContains('app/Services/TagExporter.php:7 phpat.testServicesAreFinal', $defaults);
-        $this->assertContains('app/Services/TagService.php:17 ultimateFormatter.sprintf', $defaults);
+        $this->assertContains('app/Services/TagService.php:17 ultimateFormatter.disallowSprintf', $defaults);
     }
 
     /**

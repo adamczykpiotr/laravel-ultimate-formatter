@@ -21,17 +21,37 @@ return [
     ],
     // The PHPStan ruleset's rules, by the identifier PHPStan reports; set one to false to turn it off.
     'phpstan-rules' => [
-        'ultimateFormatter.sprintf' => true,
-        'ultimateFormatter.arrayFunction' => true,
-        'ultimateFormatter.methodExists' => true,
-        'ultimateFormatter.fileExists' => true,
-        'ultimateFormatter.pregFunction' => true,
-        'ultimateFormatter.httpInService' => true,
-        'ultimateFormatter.modelAttributeArray' => true,
-        'ultimateFormatter.responseJson' => true,
-        'ultimateFormatter.appEnvironment' => true,
-        'ultimateFormatter.logShouldReceive' => true,
+        /*
+        |--------------------------------------------------------------------------
+        | Banned calls
+        |--------------------------------------------------------------------------
+        */
+
+        'ultimateFormatter.disallowSprintf' => true,
+        'ultimateFormatter.disallowNativeArrayFunctions' => true,
+        'ultimateFormatter.disallowMethodExists' => true,
+        'ultimateFormatter.disallowFileExists' => true,
+        'ultimateFormatter.disallowNativePregFunctions' => true,
+        'ultimateFormatter.disallowHttpHelpersInServices' => true,
+        'ultimateFormatter.disallowModelMassAssignment' => true,
+        'ultimateFormatter.disallowResponseJson' => true,
+        'ultimateFormatter.disallowAppEnvironment' => true,
+        'ultimateFormatter.disallowLogShouldReceive' => true,
+
+        /*
+        |--------------------------------------------------------------------------
+        | Larastan
+        |--------------------------------------------------------------------------
+        */
+
         'larastan.noEnvCallsOutsideOfConfig' => true,
+
+        /*
+        |--------------------------------------------------------------------------
+        | Architecture (phpat)
+        |--------------------------------------------------------------------------
+        */
+
         'phpat.testControllersAreNamedController' => true,
         'phpat.testServicesAreNamedService' => false,
         'phpat.testServicesAreFinal' => true,

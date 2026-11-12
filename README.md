@@ -125,7 +125,7 @@ later:
 
 ```php
 'phpstan-rules' => [
-    'ultimateFormatter.arrayFunction' => false,
+    'ultimateFormatter.disallowNativeArrayFunctions' => false,
     'phpat.testServicesAreFinal' => false,
     'phpat.testServicesAreNamedService' => true,
 ],

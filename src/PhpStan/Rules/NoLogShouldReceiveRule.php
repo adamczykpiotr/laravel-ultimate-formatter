@@ -53,7 +53,7 @@ class NoLogShouldReceiveRule implements Rule
 
         return [
             RuleErrorBuilder::message('Calling Log::shouldReceive() is forbidden, arrange with Log::spy() and assert after the fact instead.')
-                ->identifier('ultimateFormatter.logShouldReceive')
+                ->identifier('ultimateFormatter.disallowLogShouldReceive')
                 ->build(),
         ];
     }

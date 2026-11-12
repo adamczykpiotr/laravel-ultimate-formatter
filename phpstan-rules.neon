@@ -10,23 +10,23 @@ parameters:
         -
             function: 'sprintf()'
             message: 'interpolate named variables instead.'
-            errorIdentifier: 'ultimateFormatter.sprintf'
+            errorIdentifier: 'ultimateFormatter.disallowSprintf'
         -
             function: 'array_*()'
             message: 'use a Collection pipeline instead.'
-            errorIdentifier: 'ultimateFormatter.arrayFunction'
+            errorIdentifier: 'ultimateFormatter.disallowNativeArrayFunctions'
         -
             function: 'method_exists()'
             message: 'gate on an interface with instanceof instead.'
-            errorIdentifier: 'ultimateFormatter.methodExists'
+            errorIdentifier: 'ultimateFormatter.disallowMethodExists'
         -
             function: 'file_exists()'
             message: 'use File::exists() instead.'
-            errorIdentifier: 'ultimateFormatter.fileExists'
+            errorIdentifier: 'ultimateFormatter.disallowFileExists'
         -
             function: 'preg_*()'
             message: 'use Str or Stringable instead.'
-            errorIdentifier: 'ultimateFormatter.pregFunction'
+            errorIdentifier: 'ultimateFormatter.disallowNativePregFunctions'
         -
             function:
                 - 'auth()'
@@ -38,7 +38,7 @@ parameters:
                 - 'session()'
                 - 'to_route()'
             message: 'services stay out of HTTP, so pass the value in as an argument instead.'
-            errorIdentifier: 'ultimateFormatter.httpInService'
+            errorIdentifier: 'ultimateFormatter.disallowHttpHelpersInServices'
             disallowInMethods:
                 - 'App\Services\*::*()'
 
@@ -51,15 +51,15 @@ parameters:
                 - 'Illuminate\Database\Eloquent\Model::fill()'
                 - 'Illuminate\Database\Eloquent\Model::update()'
             message: 'create the model with new, assign each property, then save().'
-            errorIdentifier: 'ultimateFormatter.modelAttributeArray'
+            errorIdentifier: 'ultimateFormatter.disallowModelMassAssignment'
         -
             method: 'Illuminate\Contracts\Routing\ResponseFactory::json()'
             message: 'return through Resp::success() or Resp::error() instead.'
-            errorIdentifier: 'ultimateFormatter.responseJson'
+            errorIdentifier: 'ultimateFormatter.disallowResponseJson'
         -
             method: 'Illuminate\Contracts\Foundation\Application::environment()'
             message: 'gate the behaviour on a config flag instead.'
-            errorIdentifier: 'ultimateFormatter.appEnvironment'
+            errorIdentifier: 'ultimateFormatter.disallowAppEnvironment'
 
     # Larastan resolves Model::create() and the facades to the class that declares the method, so the static calls are listed by that class.
     disallowedStaticCalls:
@@ -69,11 +69,11 @@ parameters:
                 - 'Illuminate\Database\Eloquent\Builder::firstOrCreate()'
                 - 'Illuminate\Database\Eloquent\Builder::updateOrCreate()'
             message: 'create the model with new, assign each property, then save().'
-            errorIdentifier: 'ultimateFormatter.modelAttributeArray'
+            errorIdentifier: 'ultimateFormatter.disallowModelMassAssignment'
         -
             method: 'Illuminate\Support\Facades\App::environment()'
             message: 'gate the behaviour on a config flag instead.'
-            errorIdentifier: 'ultimateFormatter.appEnvironment'
+            errorIdentifier: 'ultimateFormatter.disallowAppEnvironment'
 
 rules:
     - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\NoLogShouldReceiveRule

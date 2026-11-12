@@ -14,7 +14,7 @@ entry. For example, controllers whose response shape outside consumers depend on
 parameters:
     ignoreErrors:
         -
-            identifier: ultimateFormatter.responseJson
+            identifier: ultimateFormatter.disallowResponseJson
             paths:
                 - app/Http/Controllers/Integrations/*
 ```
@@ -26,18 +26,18 @@ Paths are relative to the config file, and `*` matches subdirectories too.
 Via [phpstan-disallowed-calls](https://github.com/spaze/phpstan-disallowed-calls), plus one custom rule
 for `Log::shouldReceive()`.
 
-| Banned                                                                                                     | Use instead                          | Identifier                              |
-|------------------------------------------------------------------------------------------------------------|--------------------------------------|-----------------------------------------|
-| `sprintf()`                                                                                                | Interpolated named variables         | `ultimateFormatter.sprintf`             |
-| `array_*()`                                                                                                | A Collection pipeline                | `ultimateFormatter.arrayFunction`       |
-| `method_exists()`                                                                                          | An interface and `instanceof`        | `ultimateFormatter.methodExists`        |
-| `file_exists()`                                                                                            | `File::exists()`                     | `ultimateFormatter.fileExists`          |
-| `preg_*()`                                                                                                 | `Str` / `Stringable`                 | `ultimateFormatter.pregFunction`        |
-| `auth()`, `back()`, `cookie()`, `redirect()`, `request()`, `response()`, `session()`, `to_route()` in `App\Services` | Pass the value in as an argument     | `ultimateFormatter.httpInService`       |
-| `Model::create()`, `firstOrCreate()`, `updateOrCreate()`, `->fill()`, `->update()`                         | `new`, assign each property, `save()` | `ultimateFormatter.modelAttributeArray` |
-| `response()->json()`                                                                                       | `Resp::success()` / `Resp::error()`  | `ultimateFormatter.responseJson`        |
-| `app()->environment()`, `App::environment()`                                                               | A config flag                        | `ultimateFormatter.appEnvironment`      |
-| `Log::shouldReceive()`                                                                                     | `Log::spy()`                         | `ultimateFormatter.logShouldReceive`    |
+| Banned                                                                                                               | Use instead                           | Identifier                                        |
+|----------------------------------------------------------------------------------------------------------------------|---------------------------------------|---------------------------------------------------|
+| `sprintf()`                                                                                                          | Interpolated named variables          | `ultimateFormatter.disallowSprintf`               |
+| `array_*()`                                                                                                          | A Collection pipeline                 | `ultimateFormatter.disallowNativeArrayFunctions`  |
+| `method_exists()`                                                                                                    | An interface and `instanceof`         | `ultimateFormatter.disallowMethodExists`          |
+| `file_exists()`                                                                                                      | `File::exists()`                      | `ultimateFormatter.disallowFileExists`            |
+| `preg_*()`                                                                                                           | `Str` / `Stringable`                  | `ultimateFormatter.disallowNativePregFunctions`   |
+| `auth()`, `back()`, `cookie()`, `redirect()`, `request()`, `response()`, `session()`, `to_route()` in `App\Services` | Pass the value in as an argument      | `ultimateFormatter.disallowHttpHelpersInServices` |
+| `Model::create()`, `firstOrCreate()`, `updateOrCreate()`, `->fill()`, `->update()`                                   | `new`, assign each property, `save()` | `ultimateFormatter.disallowModelMassAssignment`   |
+| `response()->json()`                                                                                                 | `Resp::success()` / `Resp::error()`   | `ultimateFormatter.disallowResponseJson`          |
+| `app()->environment()`, `App::environment()`                                                                         | A config flag                         | `ultimateFormatter.disallowAppEnvironment`        |
+| `Log::shouldReceive()`                                                                                               | `Log::spy()`                          | `ultimateFormatter.disallowLogShouldReceive`      |
 
 Larastan's `noEnvCallsOutsideOfConfig` stays on, so `env()` is only called in `config/`
 (`larastan.noEnvCallsOutsideOfConfig`).
