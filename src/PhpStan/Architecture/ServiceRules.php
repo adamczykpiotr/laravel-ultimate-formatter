@@ -64,6 +64,12 @@ class ServiceRules
                 Selector::inNamespace('Illuminate\Http'),
                 Selector::inNamespace('Illuminate\Session'),
                 Selector::inNamespace('Illuminate\Contracts\Session'),
+                // The guard logs users in and out through the session; Authenticatable, the user passed in, stays allowed.
+                Selector::classname('Illuminate\Auth\AuthManager'),
+                Selector::classname('Illuminate\Auth\SessionGuard'),
+                Selector::classname('Illuminate\Contracts\Auth\Factory'),
+                Selector::classname('Illuminate\Contracts\Auth\Guard'),
+                Selector::classname('Illuminate\Contracts\Auth\StatefulGuard'),
                 Selector::classname('Illuminate\Support\Facades\Auth'),
                 Selector::classname('Illuminate\Support\Facades\Cookie'),
                 Selector::classname('Illuminate\Support\Facades\Redirect'),

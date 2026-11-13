@@ -61,9 +61,14 @@ method name, such as `phpat.testServicesDoNotDependOnRequestResponse`.
 - `testServicesAreReadonly`: classes in `App\Services` are `readonly`, so they can't hold state between
   calls. That includes `Base{Name}` and abstract classes, since a readonly class can only extend a readonly
   parent.
-- `testServicesDoNotDependOnRequestResponse`: services don't depend on `Illuminate\Http` (the HTTP client,
-  `Illuminate\Http\Client`, is allowed), the session, or the `Auth`, `Cookie`, `Redirect`, `Request`, `Response` and `Session`
-  facades. A service behaves the same whether a controller, a job, a command or a test calls it.
+- `testServicesDoNotDependOnRequestResponse`: services don't depend on `Illuminate\Http` (the HTTP
+  client, `Illuminate\Http\Client`, is allowed), the session, the auth guard (`AuthManager`,
+  `SessionGuard` and the `Factory`, `Guard` and `StatefulGuard` contracts), or the `Auth`, `Cookie`,
+  `Redirect`, `Request`, `Response` and `Session` facades. A service behaves the same whether a
+  controller, a job, a command or a test calls it. Pass the user in instead, typed as the model or as
+  `Authenticatable`. For a login flow such as OIDC, the service builds the authorization URL, exchanges
+  the code and resolves the user; the controller keeps the state in the session, logs the user in and
+  redirects.
 
 Mockery can't mock a `final` or `readonly` class, so `$this->mock(TagService::class)` fails on a
 service. Add [dg/bypass-finals](https://github.com/dg/bypass-finals) as a dev dependency and register
