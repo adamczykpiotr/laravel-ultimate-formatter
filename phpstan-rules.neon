@@ -37,8 +37,8 @@ parameters:
                 - 'response()'
                 - 'session()'
                 - 'to_route()'
-            message: 'services stay out of HTTP, so pass the value in as an argument instead.'
-            errorIdentifier: 'ultimateFormatter.disallowHttpHelpersInServices'
+            message: 'services stay out of the request and response, so pass the value in as an argument instead.'
+            errorIdentifier: 'ultimateFormatter.disallowRequestResponseHelpersInServices'
             disallowInMethods:
                 - 'App\Services\*::*()'
 

@@ -55,7 +55,7 @@ class ServiceRules
     /**
      * @return Rule
      */
-    public function testServicesDoNotDependOnHttp(): Rule
+    public function testServicesDoNotDependOnRequestResponse(): Rule
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace('App\Services'))

@@ -26,18 +26,18 @@ Paths are relative to the config file, and `*` matches subdirectories too.
 Via [phpstan-disallowed-calls](https://github.com/spaze/phpstan-disallowed-calls), plus one custom rule
 for `Log::shouldReceive()`.
 
-| Banned                                                                                                               | Use instead                           | Identifier                                        |
-|----------------------------------------------------------------------------------------------------------------------|---------------------------------------|---------------------------------------------------|
-| `sprintf()`                                                                                                          | Interpolated named variables          | `ultimateFormatter.disallowSprintf`               |
-| `array_*()`                                                                                                          | A Collection pipeline                 | `ultimateFormatter.disallowNativeArrayFunctions`  |
-| `method_exists()`                                                                                                    | An interface and `instanceof`         | `ultimateFormatter.disallowMethodExists`          |
-| `file_exists()`                                                                                                      | `File::exists()`                      | `ultimateFormatter.disallowFileExists`            |
-| `preg_*()`                                                                                                           | `Str` / `Stringable`                  | `ultimateFormatter.disallowNativePregFunctions`   |
-| `auth()`, `back()`, `cookie()`, `redirect()`, `request()`, `response()`, `session()`, `to_route()` in `App\Services` | Pass the value in as an argument      | `ultimateFormatter.disallowHttpHelpersInServices` |
-| `Model::create()`, `firstOrCreate()`, `updateOrCreate()`, `->fill()`, `->update()`                                   | `new`, assign each property, `save()` | `ultimateFormatter.disallowModelMassAssignment`   |
-| `response()->json()`                                                                                                 | `Resp::success()` / `Resp::error()`   | `ultimateFormatter.disallowResponseJson`          |
-| `app()->environment()`, `App::environment()`                                                                         | A config flag                         | `ultimateFormatter.disallowAppEnvironment`        |
-| `Log::shouldReceive()`                                                                                               | `Log::spy()`                          | `ultimateFormatter.disallowLogShouldReceive`      |
+| Banned                                                                                                               | Use instead                           | Identifier                                                   |
+|----------------------------------------------------------------------------------------------------------------------|---------------------------------------|--------------------------------------------------------------|
+| `sprintf()`                                                                                                          | Interpolated named variables          | `ultimateFormatter.disallowSprintf`                          |
+| `array_*()`                                                                                                          | A Collection pipeline                 | `ultimateFormatter.disallowNativeArrayFunctions`             |
+| `method_exists()`                                                                                                    | An interface and `instanceof`         | `ultimateFormatter.disallowMethodExists`                     |
+| `file_exists()`                                                                                                      | `File::exists()`                      | `ultimateFormatter.disallowFileExists`                       |
+| `preg_*()`                                                                                                           | `Str` / `Stringable`                  | `ultimateFormatter.disallowNativePregFunctions`              |
+| `auth()`, `back()`, `cookie()`, `redirect()`, `request()`, `response()`, `session()`, `to_route()` in `App\Services` | Pass the value in as an argument      | `ultimateFormatter.disallowRequestResponseHelpersInServices` |
+| `Model::create()`, `firstOrCreate()`, `updateOrCreate()`, `->fill()`, `->update()`                                   | `new`, assign each property, `save()` | `ultimateFormatter.disallowModelMassAssignment`              |
+| `response()->json()`                                                                                                 | `Resp::success()` / `Resp::error()`   | `ultimateFormatter.disallowResponseJson`                     |
+| `app()->environment()`, `App::environment()`                                                                         | A config flag                         | `ultimateFormatter.disallowAppEnvironment`                   |
+| `Log::shouldReceive()`                                                                                               | `Log::spy()`                          | `ultimateFormatter.disallowLogShouldReceive`                 |
 
 Larastan's `noEnvCallsOutsideOfConfig` stays on, so `env()` is only called in `config/`
 (`larastan.noEnvCallsOutsideOfConfig`).
@@ -46,7 +46,7 @@ Larastan's `noEnvCallsOutsideOfConfig` stays on, so `env()` is only called in `c
 
 Via [phpat](https://github.com/carlosas/phpat). The rules are grouped by area, one class each, in
 [`src/PhpStan/Architecture`](../src/PhpStan/Architecture). The identifier is `phpat.` followed by the
-method name, such as `phpat.testServicesDoNotDependOnHttp`.
+method name, such as `phpat.testServicesDoNotDependOnRequestResponse`.
 
 ### Controllers ([`ControllerRules`](../src/PhpStan/Architecture/ControllerRules.php))
 
@@ -61,8 +61,8 @@ method name, such as `phpat.testServicesDoNotDependOnHttp`.
 - `testServicesAreReadonly`: classes in `App\Services` are `readonly`, so they can't hold state between
   calls. That includes `Base{Name}` and abstract classes, since a readonly class can only extend a readonly
   parent.
-- `testServicesDoNotDependOnHttp`: services don't depend on `Illuminate\Http` (the HTTP client is
-  allowed), the session, or the `Auth`, `Cookie`, `Redirect`, `Request`, `Response` and `Session`
+- `testServicesDoNotDependOnRequestResponse`: services don't depend on `Illuminate\Http` (the HTTP client,
+  `Illuminate\Http\Client`, is allowed), the session, or the `Auth`, `Cookie`, `Redirect`, `Request`, `Response` and `Session`
   facades. A service behaves the same whether a controller, a job, a command or a test calls it.
 
 Mockery can't mock a `final` or `readonly` class, so `$this->mock(TagService::class)` fails on a
