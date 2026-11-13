@@ -94,6 +94,38 @@ class RulesetTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function test_an_unknown_rule_flag_stops_the_run_before_the_analysis(): void
+    {
+        $directory = sys_get_temp_dir() . '/' . uniqid('ultimate-formatter-flags-', true);
+        $filesystem = new Filesystem();
+        $filesystem->dumpFile("{$directory}/phpstan.neon", implode("\n", [
+            'includes:',
+            '    - ' . self::FIXTURE_DIRECTORY . '/phpstan.neon',
+            'parameters:',
+            "    ultimateFormatterConfigFile: {$directory}/ultimate-formatter.php",
+            '',
+        ]));
+        $filesystem->dumpFile("{$directory}/ultimate-formatter.php", "<?php\n\nreturn ['phpstan-rules' => ['ultimateFormatter.disallowSprintF' => false]];\n");
+
+        try {
+            $process = new Process(
+                [PHP_BINARY, 'vendor/bin/phpstan', 'analyse', "--configuration={$directory}/phpstan.neon", '--no-progress'],
+                __DIR__ . '/../..',
+                timeout: null,
+            );
+            $process->run();
+        } finally {
+            $filesystem->remove($directory);
+        }
+
+        $this->assertNotSame(0, $process->getExitCode());
+        $this->assertStringContainsString('has unknown rules: ultimateFormatter.disallowSprintF.', $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringNotContainsString('Internal error', $process->getOutput() . $process->getErrorOutput());
+    }
+
+    /**
      * @param string $configFile
      *
      * @return array<int, string>

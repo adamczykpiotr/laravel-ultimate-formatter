@@ -9,6 +9,7 @@ use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Error;
 use PHPStan\Analyser\IgnoreErrorExtension;
 use PHPStan\Analyser\Scope;
+use UnexpectedValueException;
 
 class RuleFlags implements IgnoreErrorExtension
 {
@@ -27,9 +28,18 @@ class RuleFlags implements IgnoreErrorExtension
     ) {
         // Read on every run, not baked into PHPStan's cached container, so flipping a flag takes effect at once.
         $defaults = $this->flags(self::DEFAULT_CONFIG_FILE);
+        $published = $this->flags($publishedConfigFile);
 
-        // Only the ruleset's own rules can be turned off; any other error is left to ignoreErrors.
-        $this->rules = array_intersect_key($this->flags($publishedConfigFile), $defaults) + $defaults;
+        // Only the ruleset's own rules can be turned off; any other error is left to ignoreErrors. A typo or a
+        // renamed identifier would otherwise leave its rule on without a word, so it stops the run instead.
+        $unknown = array_keys(array_diff_key($published, $defaults));
+        if ($unknown !== []) {
+            $rules = implode(', ', $unknown);
+
+            throw new UnexpectedValueException("Config ultimate-formatter.phpstan-rules in {$publishedConfigFile} has unknown rules: {$rules}. Use the identifiers listed in docs/phpstan-ruleset.md.");
+        }
+
+        $this->rules = $published + $defaults;
     }
 
     /**
@@ -63,13 +73,18 @@ class RuleFlags implements IgnoreErrorExtension
     {
         // PHPStan runs without Laravel, so the config file is read directly.
         $config = is_file($configFile) ? require $configFile : [];
-        $rules = is_array($config) && is_array($config['phpstan-rules'] ?? null) ? $config['phpstan-rules'] : [];
+        $rules = is_array($config) ? $config['phpstan-rules'] ?? [] : [];
+        if (is_array($rules) === false) {
+            throw new UnexpectedValueException("Config ultimate-formatter.phpstan-rules in {$configFile} must map rule identifiers to booleans.");
+        }
 
         $flags = [];
         foreach ($rules as $rule => $enabled) {
-            if (is_string($rule) && is_bool($enabled)) {
-                $flags[$rule] = $enabled;
+            if (is_string($rule) === false || is_bool($enabled) === false) {
+                throw new UnexpectedValueException("Config ultimate-formatter.phpstan-rules.{$rule} in {$configFile} must be true or false.");
             }
+
+            $flags[$rule] = $enabled;
         }
 
         return $flags;

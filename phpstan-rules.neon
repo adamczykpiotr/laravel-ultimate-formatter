@@ -4,6 +4,8 @@ parametersSchema:
 parameters:
     # The `phpstan-rules` flags in it turn the rules below on and off.
     ultimateFormatterConfigFile: %currentWorkingDirectory%/config/ultimate-formatter.php
+    bootstrapFiles:
+        - src/PhpStan/rule-flags-bootstrap.php
     noEnvCallsOutsideOfConfig: true
 
     disallowedFunctionCalls:

@@ -133,8 +133,9 @@ later:
 
 Rules you leave out keep their default. `phpat.testServicesAreNamedService` is off by default, since
 `App\Services` often holds mappers and similar classes. Only the ruleset's own rules have flags; ignore
-any other error with `ignoreErrors`. PHPStan reads the flags on every run, so a change takes effect
-without clearing its cache.
+any other error with `ignoreErrors`. A key that isn't one of them, or a value that isn't `true` or
+`false`, stops PHPStan with an error, so a typo can't leave a rule on unnoticed. PHPStan reads the flags
+on every run, so a change takes effect without clearing its cache.
 
 ## Performance
 
@@ -164,10 +165,10 @@ Rector runs 4 parallel processes by default to stay within container memory limi
 ### PHPStan ruleset
 
 `phpstan-rules.neon` reports what the formatters can't fix safely: banned calls (`sprintf`, the
-`array_*` and `preg_*` functions, request and response helpers in services, mass assignment,
-...) and architecture rules (class naming, base classes, final readonly services kept out of the request
-and response, migrations kept off models). Each rule has its own identifier for baselines and `ignoreErrors`. See [docs/phpstan-ruleset.md](docs/phpstan-ruleset.md)
-for the full list.
+`array_*` and `preg_*` functions, request and response helpers in services, mass assignment, ...) and
+architecture rules (class naming, base classes, final readonly services kept out of the request and
+response, migrations kept off models). Each rule has its own identifier for baselines and
+`ignoreErrors`. See [docs/phpstan-ruleset.md](docs/phpstan-ruleset.md) for the full list.
 
 ## Testing
 
