@@ -6,7 +6,8 @@
 
 Ultimate code formatter for Laravel, taking care of everything: one package that ships Rector
 and PHP CS Fixer with a shared, opinionated configuration, so every project formats its code the
-same way.
+same way. A PHPStan ruleset reports what the formatters can't fix: banned calls and architecture
+rules.
 
 ## Installation
 
@@ -26,13 +27,31 @@ vendor/bin/ultimate-formatter install
 
 The command detects the layout and fills in the paths that exist:
 
-| Layout | Detected by | PHP CS Fixer | Rector |
-|---|---|---|---|
-| Application | `artisan` and `app/` | `app`, `tests` | `app`, `database`, `tests` |
-| Package | `src/` | `config`, `database`, `src`, `tests`, `workbench` | `config`, `database`, `src`, `tests`, `workbench` |
+| Layout | Detected by | PHP CS Fixer | Rector | PHPStan |
+|---|---|---|---|---|
+| Application | `artisan` and `app/` | `app`, `tests` | `app`, `database`, `tests` | `app`, `database`, `routes`, `tests` |
+| Package | `src/` | `config`, `database`, `src`, `tests`, `workbench` | `config`, `database`, `src`, `tests`, `workbench` | `database`, `src`, `tests`, `workbench` |
 
-It writes `.php-cs-fixer.php`, `rector.php` and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
+It writes `.php-cs-fixer.php`, `rector.php`, `phpstan.neon` and `.git-blame-ignore-revs`. In an application it also publishes `config/ultimate-formatter.php`.
 Existing files are skipped unless you pass `--force`. `.git-blame-ignore-revs` is never overwritten, since it holds your recorded commits. Rector skips `database/migrations`.
+
+`phpstan.neon` runs level `max` with the [PHPStan ruleset](#phpstan-ruleset). It is never written next to a
+`phpstan.neon.dist` or `phpstan.dist.neon`, since it would shadow that config. Add the ruleset to your
+existing config instead:
+
+```neon
+includes:
+    - vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon
+```
+
+The ruleset configures Larastan, phpstan-disallowed-calls and phpat, so they have to be loaded. With
+`phpstan/extension-installer` they load themselves. Without it, the generated `phpstan.neon` includes
+their `extension.neon` files.
+
+The package requires Larastan `^3.13`. A project on an older Larastan gets upgraded with it, and the
+newer Larastan can report errors of its own, such as `larastan.relationExistence` or
+`method.alreadyNarrowedType`. Those come from Larastan, not from the ruleset, so fix or baseline them
+separately.
 
 It also adds the `check` and `format` scripts to `composer.json`, keeping any scripts with those names that already exist.
 In a package it adds `export-ignore` entries to `.gitattributes` for the files it publishes, so they stay out of the dist archive.
@@ -44,8 +63,10 @@ Running PHP CS Fixer on a newer PHP could introduce syntax the minimum doesn't s
 
 ```bash
 vendor/bin/ultimate-formatter format    # Rector, then PHP CS Fixer
-vendor/bin/ultimate-formatter check     # dry run, Rector first; stops at the first pending change (CI)
+vendor/bin/ultimate-formatter check     # dry run of both, then PHPStan; stops at the first failure (CI)
 ```
+
+`check` runs PHPStan only when the project has a `phpstan.neon`, `phpstan.neon.dist` or `phpstan.dist.neon`.
 
 `format --models` regenerates model docblocks with
 [laravel-ide-helper](https://github.com/barryvdh/laravel-ide-helper) first. In a Laravel app the
@@ -64,6 +85,7 @@ tool's list there, and the tools you leave out keep the package defaults:
 return [
     'check' => [
         'php-cs-fixer' => ['fix', '--dry-run', '--diff', '--verbose'],
+        'phpstan' => ['analyse', '--no-progress', '--memory-limit=4G'],
     ],
 ];
 ```
@@ -95,6 +117,26 @@ return RectorConfigFactory::create()
 They run in that order, then `--models`, then Rector and PHP CS Fixer, and the first failing step stops
 the run. Their arguments live under `format.clear-cache` and `format.migrate`. `check` never runs them.
 
+### Ruleset flags
+
+Each rule of the [PHPStan ruleset](#phpstan-ruleset) has a flag in `config/ultimate-formatter.php`,
+keyed by the identifier PHPStan reports. Set one to `false` to adopt the ruleset now and fix that rule
+later:
+
+```php
+'phpstan-rules' => [
+    'ultimateFormatter.disallowNativeArrayFunctions' => false,
+    'phpat.testServicesAreFinal' => false,
+    'phpat.testServicesAreNamedService' => true,
+],
+```
+
+Rules you leave out keep their default. `phpat.testServicesAreNamedService` is off by default, since
+`App\Services` often holds mappers and similar classes. Only the ruleset's own rules have flags; ignore
+any other error with `ignoreErrors`. A key that isn't one of them, or a value that isn't `true` or
+`false`, stops PHPStan with an error, so a typo can't leave a rule on unnoticed. PHPStan reads the flags
+on every run, so a change takes effect without clearing its cache.
+
 ## Performance
 
 The package is tuned to make every run as fast as it can be:
@@ -119,6 +161,14 @@ Rector runs 4 parallel processes by default to stay within container memory limi
   such as `non-empty-string` or `list<string>` are kept. `?string` in a tag becomes `string|null`.
 - **Banner comments.** A `/* | Section | */` banner is always followed by a blank line, via the
   custom `UltimateFormatter/blank_line_after_banner_comment` fixer.
+
+### PHPStan ruleset
+
+`phpstan-rules.neon` reports what the formatters can't fix safely: banned calls (`sprintf`, the
+`array_*` and `preg_*` functions, request and response helpers in services, mass assignment, ...) and
+architecture rules (class naming, base classes, final readonly services kept out of the request and
+response, migrations kept off models). Each rule has its own identifier for baselines and
+`ignoreErrors`. See [docs/phpstan-ruleset.md](docs/phpstan-ruleset.md) for the full list.
 
 ## Testing
 

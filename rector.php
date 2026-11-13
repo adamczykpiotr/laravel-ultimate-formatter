@@ -9,4 +9,7 @@ return RectorConfigFactory::create()
         __DIR__ . '/config',
         __DIR__ . '/src',
         __DIR__ . '/tests',
+    ])
+    ->withSkip([
+        __DIR__ . '/tests/PhpStan/Fixture',
     ]);

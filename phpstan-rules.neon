@@ -1,0 +1,117 @@
+parametersSchema:
+    ultimateFormatterConfigFile: string()
+
+parameters:
+    # The `phpstan-rules` flags in it turn the rules below on and off.
+    ultimateFormatterConfigFile: %currentWorkingDirectory%/config/ultimate-formatter.php
+    bootstrapFiles:
+        - src/PhpStan/rule-flags-bootstrap.php
+    noEnvCallsOutsideOfConfig: true
+
+    disallowedFunctionCalls:
+        -
+            function: 'sprintf()'
+            message: 'interpolate named variables instead.'
+            errorIdentifier: 'ultimateFormatter.disallowSprintf'
+        -
+            function: 'array_*()'
+            message: 'use a Collection pipeline instead.'
+            errorIdentifier: 'ultimateFormatter.disallowNativeArrayFunctions'
+        -
+            function: 'method_exists()'
+            message: 'gate on an interface with instanceof instead.'
+            errorIdentifier: 'ultimateFormatter.disallowMethodExists'
+        -
+            function: 'file_exists()'
+            message: 'use File::exists() instead.'
+            errorIdentifier: 'ultimateFormatter.disallowFileExists'
+        -
+            function: 'preg_*()'
+            message: 'use Str or Stringable instead.'
+            errorIdentifier: 'ultimateFormatter.disallowNativePregFunctions'
+        -
+            function:
+                - 'auth()'
+                - 'back()'
+                - 'cookie()'
+                - 'redirect()'
+                - 'request()'
+                - 'response()'
+                - 'session()'
+                - 'to_route()'
+            message: 'services stay out of the request and response, so pass the value in as an argument instead.'
+            errorIdentifier: 'ultimateFormatter.disallowRequestResponseHelpersInServices'
+            disallowInMethods:
+                - 'App\Services\*::*()'
+
+    disallowedMethodCalls:
+        -
+            method:
+                - 'Illuminate\Database\Eloquent\Builder::create()'
+                - 'Illuminate\Database\Eloquent\Builder::firstOrCreate()'
+                - 'Illuminate\Database\Eloquent\Builder::updateOrCreate()'
+                - 'Illuminate\Database\Eloquent\Model::fill()'
+                - 'Illuminate\Database\Eloquent\Model::update()'
+            message: 'create the model with new, assign each property, then save().'
+            errorIdentifier: 'ultimateFormatter.disallowModelMassAssignment'
+        -
+            method: 'Illuminate\Contracts\Routing\ResponseFactory::json()'
+            message: 'return through Resp::success() or Resp::error() instead.'
+            errorIdentifier: 'ultimateFormatter.disallowResponseJson'
+        -
+            method: 'Illuminate\Contracts\Foundation\Application::environment()'
+            message: 'gate the behaviour on a config flag instead.'
+            errorIdentifier: 'ultimateFormatter.disallowAppEnvironment'
+
+    # Larastan resolves Model::create() and the facades to the class that declares the method, so the static calls are listed by that class.
+    disallowedStaticCalls:
+        -
+            method:
+                - 'Illuminate\Database\Eloquent\Builder::create()'
+                - 'Illuminate\Database\Eloquent\Builder::firstOrCreate()'
+                - 'Illuminate\Database\Eloquent\Builder::updateOrCreate()'
+            message: 'create the model with new, assign each property, then save().'
+            errorIdentifier: 'ultimateFormatter.disallowModelMassAssignment'
+        -
+            method: 'Illuminate\Support\Facades\App::environment()'
+            message: 'gate the behaviour on a config flag instead.'
+            errorIdentifier: 'ultimateFormatter.disallowAppEnvironment'
+
+rules:
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\NoLogShouldReceiveRule
+
+services:
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\RuleFlags
+        arguments:
+            - %ultimateFormatterConfigFile%
+        tags:
+            - phpstan.ignoreErrorExtension
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ControllerRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\DtoRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ExceptionRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\MigrationRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\RequestRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ResourceRules
+        tags:
+            - phpat.test
+    -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ServiceRules
+        tags:
+            - phpat.test

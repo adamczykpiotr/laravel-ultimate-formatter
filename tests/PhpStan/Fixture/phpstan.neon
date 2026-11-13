@@ -1,0 +1,12 @@
+includes:
+    - ../../../phpstan-rules.neon
+
+parameters:
+    level: 0
+    paths:
+        - app
+        - database
+        - tests
+    scanFiles:
+        - stubs/laravel-data.php
+    tmpDir: ../../../build/phpstan-fixture
