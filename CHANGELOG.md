@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.12.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.11.0...v1.12.0) (2026-11-15)
+
+
+### Features
+
+* migrate the published config on package upgrade ([#41](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/41)) ([b0afc50](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/b0afc506bd7084ebbe49b6197bb5acbf5ced8a9a)), closes [#38](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/38)
+
 # [1.11.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.10.0...v1.11.0) (2026-11-15)
 
 
