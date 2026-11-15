@@ -44,7 +44,7 @@ class FormatCommand extends FormatterCommand
             }
         }
 
-        $rectorExitCode = $this->runPhpScript('vendor/bin/rector', $this->configuredArguments($input, 'format.rector'), $input, $output);
+        $rectorExitCode = $this->runPhpScript(self::RECTOR_SCRIPT, $this->configuredArguments($input, 'format.rector'), $input, $output);
         if ($rectorExitCode !== self::SUCCESS) {
             return $rectorExitCode;
         }

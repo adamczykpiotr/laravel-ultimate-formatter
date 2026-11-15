@@ -79,7 +79,7 @@ same commands are available as `php artisan formatter:install`, `formatter:forma
 
 Pass `-q` to silence every step, so only the exit code reports the result. Pass `-v`, `-vv` or `-vvv` to
 print each command before it runs and hand the same level to it. Both replace any `--quiet` or `-v` in the
-configured arguments.
+configured arguments. Rector has no such flags, so it gets `--debug` at `-vvv` and nothing otherwise.
 
 Record bulk formatting commits in `.git-blame-ignore-revs` so blame skips them, and point
 `blame.ignoreRevsFile` at that file in your local git config.
