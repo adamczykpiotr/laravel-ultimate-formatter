@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.14.0...v1.14.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **phpstan:** link the ruleset docs on GitHub in the unknown-rules error ([#57](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/57)) ([62be634](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/62be634ed26ed79982d441739ccc0f1ef1f52c5c))
+
 # [1.14.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.7...v1.14.0) (2026-11-15)
 
 
