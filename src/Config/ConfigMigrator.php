@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Config;
 
+use AdamczykPiotr\UltimateFormatter\Config\Diff\DiffLine;
+use AdamczykPiotr\UltimateFormatter\Config\Diff\DiffOperation;
+use AdamczykPiotr\UltimateFormatter\Config\Diff\DiffParser;
+use AdamczykPiotr\UltimateFormatter\Config\Diff\Patch;
+use AdamczykPiotr\UltimateFormatter\Config\Diff\RemovedLine;
+use AdamczykPiotr\UltimateFormatter\Exceptions\ConfigNotMigratableException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Symfony\Component\Filesystem\Filesystem;
-use UnexpectedValueException;
 
 class ConfigMigrator
 {
@@ -20,9 +25,13 @@ class ConfigMigrator
 
     /**
      * @param string $diffsDirectory
+     * @param DiffParser $diffParser
+     * @param Filesystem $filesystem
      */
     public function __construct(
         protected readonly string $diffsDirectory = self::DIFFS_DIRECTORY,
+        protected readonly DiffParser $diffParser = new DiffParser(),
+        protected readonly Filesystem $filesystem = new Filesystem(),
     ) {}
 
     /**
@@ -38,11 +47,12 @@ class ConfigMigrator
      * @param bool $dryRun
      *
      * @return ConfigMigration
+     *
+     * @throws ConfigNotMigratableException
      */
     public function migrate(string $configFile, bool $dryRun = false): ConfigMigration
     {
-        $filesystem = new Filesystem();
-        $lines = collect(explode("\n", $filesystem->readFile($configFile)));
+        $lines = Str::of($this->filesystem->readFile($configFile))->explode("\n");
         $isVersioned = $this->publishedVersion($lines) !== null;
         $fromVersion = $this->publishedVersion($lines) ?? $this->unversionedVersion($lines);
         $toVersion = $this->latestVersion();
@@ -54,30 +64,30 @@ class ConfigMigrator
         $lines = $lines->reject(fn(string $line): bool => Str::isMatch(self::VERSION_PATTERN, $line))->values();
         $returnLine = $lines->search(fn(string $line): bool => trim($line) === self::RETURN_LINE);
         if (is_int($returnLine) === false) {
-            throw new UnexpectedValueException('it does not return a [...] array');
+            throw new ConfigNotMigratableException('it does not return a [...] array');
         }
 
         $applied = [];
         $skipped = [];
         $versions = $this->versions()->filter(fn(string $version): bool => version_compare($version, $fromVersion, '>'));
         foreach ($versions as $version) {
-            foreach ($this->hunks("{$this->diffsDirectory}/{$version}.diff") as $hunk) {
-                $result = $this->applyHunk($lines, $hunk);
-                if ($result === null) {
-                    $hunkText = collect($hunk)->map(fn(array $line): string => "{$line[0]}{$line[1]}")->implode("\n");
+            foreach ($this->diffParser->hunks("{$this->diffsDirectory}/{$version}.diff") as $hunk) {
+                $patch = $this->applyHunk($lines, $hunk);
+                if ($patch === null) {
+                    $hunkText = $hunk->map(fn(DiffLine $line): string => $line->toDiff())->implode("\n");
                     $skipped[] = "Skipped a change from config/diffs/{$version}.diff, the lines around it were edited:\n{$hunkText}";
 
                     continue;
                 }
 
-                [$lines, $messages] = $result;
-                $applied = [...$applied, ...$messages];
+                $lines = $patch->lines;
+                $applied = [...$applied, ...$patch->messages];
             }
         }
 
         $lines = $this->withVersion($lines, $toVersion);
         if ($dryRun === false) {
-            $filesystem->dumpFile($configFile, $lines->implode("\n"));
+            $this->filesystem->dumpFile($configFile, $lines->implode("\n"));
         }
 
         return new ConfigMigration($fromVersion, $toVersion, $applied, $skipped);
@@ -134,13 +144,13 @@ class ConfigMigrator
      */
     protected function addedKeys(string $diffFile): Collection
     {
-        $lines = collect($this->hunks($diffFile))->flatMap(fn(array $hunk): array => $hunk);
-        $keysOf = fn(string $operation): Collection => $lines
-            ->filter(fn(array $line): bool => $line[0] === $operation)
-            ->map(fn(array $line): string|null => $this->key($line[1]))
+        $lines = $this->diffParser->hunks($diffFile)->flatMap(fn(Collection $hunk): Collection => $hunk);
+        $keysOf = fn(DiffOperation $operation): Collection => $lines
+            ->filter(fn(DiffLine $line): bool => $line->operation === $operation)
+            ->map(fn(DiffLine $line): string|null => $this->key($line->text))
             ->filter();
 
-        return $keysOf('+')->diff($keysOf('-'))->unique()->values();
+        return $keysOf(DiffOperation::ADDED)->diff($keysOf(DiffOperation::REMOVED))->unique()->values();
     }
 
     /**
@@ -164,49 +174,16 @@ class ConfigMigrator
     }
 
     /**
-     * @param string $diffFile
-     *
-     * @return list<list<array{string, string}>>
-     */
-    protected function hunks(string $diffFile): array
-    {
-        $hunks = [];
-        $hunk = null;
-        foreach (explode("\n", (new Filesystem())->readFile($diffFile)) as $line) {
-            if (str_starts_with($line, '@@')) {
-                if ($hunk !== null) {
-                    $hunks[] = $hunk;
-                }
-
-                $hunk = [];
-
-                continue;
-            }
-
-            // The file headers come before the first hunk.
-            if ($hunk !== null && in_array(substr($line, 0, 1), [' ', '-', '+'], true)) {
-                $hunk[] = [substr($line, 0, 1), substr($line, 1)];
-            }
-        }
-
-        if ($hunk !== null) {
-            $hunks[] = $hunk;
-        }
-
-        return $hunks;
-    }
-
-    /**
      * @param Collection<int, string> $lines
-     * @param list<array{string, string}> $hunk
+     * @param Collection<int, DiffLine> $hunk
      *
-     * @return array{Collection<int, string>, list<string>}|null
+     * @return Patch|null
      */
-    protected function applyHunk(Collection $lines, array $hunk): array|null
+    protected function applyHunk(Collection $lines, Collection $hunk): Patch|null
     {
-        $oldLines = collect($hunk)
-            ->reject(fn(array $line): bool => $line[0] === '+')
-            ->map(fn(array $line): string => $line[1])
+        $oldLines = $hunk
+            ->reject(fn(DiffLine $line): bool => $line->operation === DiffOperation::ADDED)
+            ->map(fn(DiffLine $line): string => $line->text)
             ->values();
         $start = $this->locate($lines, $oldLines);
         if ($start === null) {
@@ -220,15 +197,15 @@ class ConfigMigrator
         // Each - line is paired with the + line in the same place, so a changed default keeps the project's value.
         $removedLines = [];
         $pairedCount = 0;
-        foreach ($hunk as [$operation, $text]) {
-            if ($operation === '-') {
-                $removedLines[] = [$text, $matchedLines[$offset]];
+        foreach ($hunk as $line) {
+            if ($line->operation === DiffOperation::REMOVED) {
+                $removedLines[] = new RemovedLine($line->text, $matchedLines[$offset]);
                 $offset++;
 
                 continue;
             }
 
-            if ($operation === ' ') {
+            if ($line->operation === DiffOperation::CONTEXT) {
                 $messages = [...$messages, ...$this->removalMessages(collect($removedLines)->slice($pairedCount))];
                 $removedLines = [];
                 $pairedCount = 0;
@@ -243,18 +220,18 @@ class ConfigMigrator
                 $pairedCount++;
             }
 
-            [$replacement, $replacementMessages] = $removedLine === null
-                ? [[$text], $this->keyMessage('Added', $text)]
-                : $this->replaceLine($removedLine[0], $removedLine[1], $text);
-            $newLines = [...$newLines, ...$replacement];
-            $messages = [...$messages, ...$replacementMessages];
+            $replacement = $removedLine === null
+                ? new Patch(collect([$line->text]), $this->keyMessage('Added', $line->text))
+                : $this->replaceLine($removedLine, $line->text);
+            $newLines = [...$newLines, ...$replacement->lines];
+            $messages = [...$messages, ...$replacement->messages];
         }
 
         $messages = [...$messages, ...$this->removalMessages(collect($removedLines)->slice($pairedCount))];
         $patchedLines = $lines->values();
         $patchedLines->splice($start, $offset, $newLines);
 
-        return [$patchedLines, $messages];
+        return new Patch($patchedLines, $messages);
     }
 
     /**
@@ -295,55 +272,55 @@ class ConfigMigrator
     }
 
     /**
-     * @param string $oldDefault
-     * @param string $publishedLine
+     * @param RemovedLine $removedLine
      * @param string $newDefault
      *
-     * @return array{list<string>, list<string>}
+     * @return Patch
      */
-    protected function replaceLine(string $oldDefault, string $publishedLine, string $newDefault): array
+    protected function replaceLine(RemovedLine $removedLine, string $newDefault): Patch
     {
-        $oldKey = $this->key($oldDefault);
+        $publishedLine = $removedLine->publishedLine;
+        $oldKey = $this->key($removedLine->oldDefault);
         $newKey = $this->key($newDefault);
-        $isEdited = trim($publishedLine) !== trim($oldDefault);
 
         if ($oldKey !== null && $oldKey === $newKey) {
             // A config dated by its keys can already hold a later default.
             if (trim($publishedLine) === trim($newDefault)) {
-                return [[$publishedLine], []];
+                return new Patch(collect([$publishedLine]), []);
             }
 
-            if ($isEdited) {
+            if ($removedLine->isEdited()) {
                 $newValue = $this->value($newDefault);
 
-                return [[$publishedLine], ["Kept your value of {$newKey}, its default is now {$newValue}."]];
+                return new Patch(collect([$publishedLine]), ["Kept your value of {$newKey}, its default is now {$newValue}."]);
             }
 
-            return [[$newDefault], ["Updated the default of {$newKey}."]];
+            return new Patch(collect([$newDefault]), ["Updated the default of {$newKey}."]);
         }
 
-        return [[$newDefault], [...$this->removalMessages(collect([[$oldDefault, $publishedLine]])), ...$this->keyMessage('Added', $newDefault)]];
+        $messages = [...$this->removalMessages(collect([$removedLine])), ...$this->keyMessage('Added', $newDefault)];
+
+        return new Patch(collect([$newDefault]), $messages);
     }
 
     /**
-     * @param Collection<int, array{string, string}> $removedLines
+     * @param Collection<int, RemovedLine> $removedLines
      *
      * @return Collection<int, non-falsy-string>
      */
     protected function removalMessages(Collection $removedLines): Collection
     {
         return $removedLines
-            ->flatMap(function (array $removedLine): array {
-                [$oldDefault, $publishedLine] = $removedLine;
-                $key = $this->key($oldDefault);
+            ->flatMap(function (RemovedLine $removedLine): array {
+                $key = $this->key($removedLine->oldDefault);
                 if ($key === null) {
                     return [];
                 }
 
                 // A diff can't tell a rename from a removal, so a value the project set is pointed out instead of carried over.
-                return trim($publishedLine) === trim($oldDefault)
-                    ? ["Removed {$key}."]
-                    : ["Removed {$key}, move your value {$this->value($publishedLine)} over if it still applies."];
+                return $removedLine->isEdited()
+                    ? ["Removed {$key}, move your value {$this->value($removedLine->publishedLine)} over if it still applies."]
+                    : ["Removed {$key}."];
             })
             ->values();
     }

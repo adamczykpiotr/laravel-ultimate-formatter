@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AdamczykPiotr\UltimateFormatter\Console;
+
+enum Tool
+{
+    case ARTISAN;
+    case PHP_CS_FIXER;
+    case PHPSTAN;
+    case RECTOR;
+
+    /**
+     * @return string
+     */
+    public function script(): string
+    {
+        return match ($this) {
+            self::ARTISAN => 'artisan',
+            self::PHP_CS_FIXER => 'vendor/bin/php-cs-fixer',
+            self::PHPSTAN => 'vendor/bin/phpstan',
+            self::RECTOR => 'vendor/bin/rector',
+        };
+    }
+}

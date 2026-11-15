@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Console\Commands;
 
 use AdamczykPiotr\UltimateFormatter\Config\ConfigMigrator;
+use AdamczykPiotr\UltimateFormatter\Config\ConfigReader;
+use AdamczykPiotr\UltimateFormatter\Exceptions\ConfigNotMigratableException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use UnexpectedValueException;
 
 // Composer's post-update-cmd runs it, so it stays out of the command lists.
 #[AsCommand(name: 'formatter:migrate-config', description: 'Bring the published config/ultimate-formatter.php up to date with the package', hidden: true)]
@@ -17,9 +18,11 @@ class MigrateConfigCommand extends FormatterCommand
 {
     /**
      * @param ConfigMigrator $migrator
+     * @param ConfigReader $configReader
      */
     public function __construct(
         protected readonly ConfigMigrator $migrator = new ConfigMigrator(),
+        protected readonly ConfigReader $configReader = new ConfigReader(),
     ) {
         parent::__construct();
     }
@@ -42,8 +45,8 @@ class MigrateConfigCommand extends FormatterCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $publishedFile = self::PUBLISHED_CONFIG_FILE;
-        $configFile = "{$this->projectPath($input)}/{$publishedFile}";
+        $publishedFile = ConfigReader::PUBLISHED_CONFIG_FILE;
+        $configFile = $this->configReader->publishedConfigFile($this->projectPath($input));
         if (is_file($configFile) === false) {
             $output->writeln("Skipped the config migration, {$publishedFile} is not published.", OutputInterface::VERBOSITY_VERBOSE);
 
@@ -54,7 +57,7 @@ class MigrateConfigCommand extends FormatterCommand
 
         try {
             $migration = $this->migrator->migrate($configFile, $dryRun);
-        } catch (UnexpectedValueException $exception) {
+        } catch (ConfigNotMigratableException $exception) {
             // It runs from composer's post-update-cmd, so a config it can't migrate must not fail the update.
             $output->writeln("<comment>Skipped the config migration, {$publishedFile} can't be edited: {$exception->getMessage()}.</comment>");
 
