@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Rector\Rules;
 
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use PhpParser\Comment;
+use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\TraitUse;
+use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -54,12 +59,54 @@ final class GroupTraitUsesRector extends AbstractRector
         }
 
         $adaptations = $traitUses->flatMap(fn(TraitUse $traitUse): array => $traitUse->adaptations)->all();
-        $groupedTraitUse = new TraitUse($traits->all(), $adaptations, $firstTraitUse->getAttributes());
+        $attributes = [...$firstTraitUse->getAttributes(), 'comments' => $this->mergedComments($traitUses)];
+        unset($attributes[AttributeKey::PHP_DOC_INFO]);
+        $groupedTraitUse = new TraitUse($traits->all(), $adaptations, $attributes);
         $otherStmts = collect($node->stmts)->reject(fn(Node $stmt): bool => $stmt instanceof TraitUse);
 
         $node->stmts = [$groupedTraitUse, ...$otherStmts->values()->all()];
 
         return $node;
+    }
+
+    /**
+     * Keeps the comments of every trait use, joining their docblocks into one, since PHPStan reads only the last docblock
+     * before a statement and would miss the other @use tags.
+     *
+     * @param Collection<int, TraitUse> $traitUses
+     *
+     * @return array<int, Comment>
+     */
+    protected function mergedComments(Collection $traitUses): array
+    {
+        $comments = $traitUses->flatMap(fn(TraitUse $traitUse): array => $traitUse->getComments());
+        $docComments = $comments->filter(fn(Comment $comment): bool => $comment instanceof Doc);
+        if ($docComments->count() <= 1) {
+            return $comments->values()->all();
+        }
+
+        $tags = $docComments->flatMap(fn(Comment $docComment): array => $this->docblockLines($docComment));
+        $mergedDocComment = new Doc("/**\n" . $tags->map(fn(string $tag): string => " * {$tag}")->implode("\n") . "\n */");
+        $otherComments = $comments->reject(fn(Comment $comment): bool => $comment instanceof Doc);
+
+        return [...$otherComments->values()->all(), $mergedDocComment];
+    }
+
+    /**
+     * @param Comment $docComment
+     *
+     * @return array<int, string>
+     */
+    protected function docblockLines(Comment $docComment): array
+    {
+        return Str::of($docComment->getText())
+            ->after('/**')
+            ->beforeLast('*/')
+            ->explode("\n")
+            ->map(fn(string $line): string => trim(ltrim(trim($line), '*')))
+            ->filter(fn(string $line): bool => $line !== '')
+            ->values()
+            ->all();
     }
 
     /**

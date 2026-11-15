@@ -20,7 +20,7 @@ class CheckCommand extends FormatterCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // The fixer would check code Rector still has to change, so stop at the first failure like `format` does.
-        $rectorExitCode = $this->runPhpScript('vendor/bin/rector', $this->configuredArguments($input, 'check.rector'), $input, $output);
+        $rectorExitCode = $this->runPhpScript(self::RECTOR_SCRIPT, $this->configuredArguments($input, 'check.rector'), $input, $output);
         if ($rectorExitCode !== self::SUCCESS) {
             return self::FAILURE;
         }

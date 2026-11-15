@@ -36,6 +36,11 @@ class PreStepsTest extends TestCase
             file_put_contents(__DIR__ . '/artisan.log', implode(' ', $arguments) . "\n", FILE_APPEND);
             exit($arguments[0] === @file_get_contents(__DIR__ . '/fail-on.txt') ? 2 : 0);
             PHP);
+        $this->filesystem->dumpFile("{$this->projectPath}/vendor/bin/rector", <<<'PHP'
+            <?php
+            file_put_contents(__DIR__ . '/../../rector.log', implode(' ', array_slice($argv, 1)) . "\n", FILE_APPEND);
+            echo "rector output\n";
+            PHP);
     }
 
     /**
@@ -127,6 +132,7 @@ class PreStepsTest extends TestCase
             "migrate --force --quiet\nide-helper:models --reset --write --quiet\n",
             $this->filesystem->readFile("{$this->projectPath}/artisan.log"),
         );
+        $this->assertSame("process --no-progress-bar --no-diffs\n", $this->filesystem->readFile("{$this->projectPath}/rector.log"));
         $this->assertSame('', $tester->getDisplay());
     }
 
@@ -145,7 +151,22 @@ class PreStepsTest extends TestCase
             $this->filesystem->readFile("{$this->projectPath}/artisan.log"),
         );
         $this->assertStringContainsString('> php artisan ide-helper:models --reset --write -vv', $tester->getDisplay());
-        $this->assertStringContainsString('> php vendor/bin/rector process --no-progress-bar --no-diffs -vv', $tester->getDisplay());
+        $this->assertSame("process --no-progress-bar --no-diffs\n", $this->filesystem->readFile("{$this->projectPath}/rector.log"));
+        $this->assertStringContainsString('rector output', $tester->getDisplay());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_debug_runs_rector_with_its_debug_flag(): void
+    {
+        $this->publishConfig("['format' => ['rector' => ['process', '-v', '--quiet']]]");
+
+        $tester = new CommandTester(new FormatCommand());
+        $tester->execute(['--path' => $this->projectPath], ['verbosity' => OutputInterface::VERBOSITY_DEBUG]);
+
+        $this->assertSame("process --debug\n", $this->filesystem->readFile("{$this->projectPath}/rector.log"));
+        $this->assertStringContainsString('> php vendor/bin/rector process --debug', $tester->getDisplay());
     }
 
     /**

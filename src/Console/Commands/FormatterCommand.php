@@ -18,6 +18,8 @@ abstract class FormatterCommand extends Command
     protected const PUBLISHED_CONFIG_FILE = 'config/ultimate-formatter.php';
     protected const PHPSTAN_CONFIG_FILES = ['phpstan.neon', 'phpstan.neon.dist', 'phpstan.dist.neon'];
     protected const VERBOSITY_FLAGS = ['-q', '--quiet', '-v', '-vv', '-vvv', '--verbose'];
+    protected const RECTOR_SCRIPT = 'vendor/bin/rector';
+    protected const RECTOR_DEBUG_FLAG = '--debug';
 
     /**
      * @return void
@@ -121,7 +123,9 @@ abstract class FormatterCommand extends Command
      */
     protected function runPhpScript(string $script, array $arguments, InputInterface $input, OutputInterface $output): int
     {
-        $arguments = $this->withVerbosity($arguments, $output);
+        $arguments = $script === self::RECTOR_SCRIPT
+            ? $this->withRectorVerbosity($arguments, $output)
+            : $this->withVerbosity($arguments, $output);
         if ($output->isVerbose()) {
             $output->writeln("<comment>> php {$script} " . implode(' ', $arguments) . '</comment>');
         }
@@ -160,5 +164,27 @@ abstract class FormatterCommand extends Command
         $configuredArguments = collect($arguments)->reject(fn(string $argument): bool => in_array($argument, self::VERBOSITY_FLAGS, true));
 
         return [...$configuredArguments->values()->all(), $flag];
+    }
+
+    /**
+     * Rector has no -q or -v: it treats -v as --version and exits without processing, and rejects --quiet and --verbose.
+     * So -vvv maps to its --debug, and -q relies on the formatter writing nothing.
+     *
+     * @param array<int, string> $arguments
+     * @param OutputInterface $output
+     *
+     * @return array<int, string>
+     */
+    protected function withRectorVerbosity(array $arguments, OutputInterface $output): array
+    {
+        $configuredArguments = collect($arguments)
+            ->reject(fn(string $argument): bool => in_array($argument, self::VERBOSITY_FLAGS, true))
+            ->values()
+            ->all();
+        if ($output->isDebug() === false || in_array(self::RECTOR_DEBUG_FLAG, $configuredArguments, true)) {
+            return $configuredArguments;
+        }
+
+        return [...$configuredArguments, self::RECTOR_DEBUG_FLAG];
     }
 }
