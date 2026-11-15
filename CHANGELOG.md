@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.11.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.10.0...v1.11.0) (2026-11-15)
+
+
+### Features
+
+* add 7 custom Rector rules (explicit comparisons, interpolation, grouped traits, factory constants, early continue, foreach naming, coalesce) ([#37](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/37)) ([f337e7e](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/f337e7e708cc44d5a0df0650e962fb215ec04d1d)), closes [#21](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/21)
+
 # [1.10.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.9.0...v1.10.0) (2026-11-15)
 
 
