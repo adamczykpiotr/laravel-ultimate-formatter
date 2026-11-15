@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.6](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.5...v1.13.6) (2026-11-15)
+
+
+### Bug Fixes
+
+* format config, database and routes in applications ([#48](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/48)) ([934e511](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/934e5118204a1140cb9e8dcd1709f136ccbe5239)), closes [#18](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/18)
+
 ## [1.13.5](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.4...v1.13.5) (2026-11-15)
 
 
