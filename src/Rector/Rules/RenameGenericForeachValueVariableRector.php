@@ -24,11 +24,6 @@ use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
-/**
- * Replaces the deprecated upstream RenameForeachValueVariableToMatchExprVariableRector, which was dropped
- * for clobbering meaningful names. Only a generic placeholder (`$item`, `$value`, `$row`, ...) is renamed,
- * and only when nothing else in the function reads either name.
- */
 final class RenameGenericForeachValueVariableRector extends AbstractRector
 {
     protected const GENERIC_NAMES = [
@@ -170,9 +165,6 @@ AFTER,
     }
 
     /**
-     * Another loop may reuse the same placeholder, but any read outside a loop that binds it ties the
-     * name to code this rule doesn't rewrite.
-     *
      * @param FunctionLike $functionLike
      * @param string $name
      *
@@ -195,8 +187,6 @@ AFTER,
     }
 
     /**
-     * A closure parameter or an inline `@var` tag with the old name would silently keep it.
-     *
      * @param Foreach_ $foreach
      * @param string $name
      *
@@ -210,6 +200,7 @@ AFTER,
                 && collect($node->params)->contains(fn(Param $param): bool => $this->isName($param->var, $name)),
         );
 
+        // An inline `@var` tag naming the old variable isn't renamed with it.
         $docMention = $this->betterNodeFinder->findFirst(
             $foreach,
             fn(Node $node): bool => collect($node->getComments())->contains(

@@ -27,10 +27,6 @@ use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
-/**
- * A key is replaced only when the model declares exactly one `ATTRIBUTE_*` constant holding it, so an
- * attribute without a constant, or a model that can't be resolved, keeps its string key.
- */
 final class FactoryAttributeKeysToConstantsRector extends AbstractRector
 {
     protected const FACTORY_CLASS = 'Illuminate\Database\Eloquent\Factories\Factory';
@@ -179,9 +175,6 @@ AFTER,
     }
 
     /**
-     * The `$model` property wins; otherwise Laravel's own naming convention maps
-     * `Database\Factories\TagFactory` to `App\Models\Tag`.
-     *
      * @param ClassReflection $factoryReflection
      *
      * @return string|null

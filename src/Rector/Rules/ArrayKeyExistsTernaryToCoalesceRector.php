@@ -16,10 +16,6 @@ use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
-/**
- * Upstream ArrayKeyExistsTernaryThenValueToCoalescingRector only fires when the fallback is `null`.
- * A present key holding `null` now yields the fallback instead of `null`, which the style accepts.
- */
 final class ArrayKeyExistsTernaryToCoalesceRector extends AbstractRector
 {
     /**

@@ -21,11 +21,6 @@ use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
-/**
- * Only single-line chains whose operands are strings or plain variable, property and array reads are
- * rewritten. A chain with any other operand (a call, a constant, an arithmetic expression) is left for a
- * person to extract a named variable first, as the style asks.
- */
 final class ConcatToInterpolationRector extends AbstractRector
 {
     protected const SKIP_ATTRIBUTE = 'ultimate_formatter_skip_concat';
@@ -112,7 +107,8 @@ AFTER,
      */
     protected function markInnerConcatsSkipped(Concat $concat): void
     {
-        foreach ([$concat->left, $concat->right] as $side) {
+        $sides = [$concat->left, $concat->right];
+        foreach ($sides as $side) {
             if ($side instanceof Concat) {
                 $side->setAttribute(self::SKIP_ATTRIBUTE, true);
                 $this->markInnerConcatsSkipped($side);

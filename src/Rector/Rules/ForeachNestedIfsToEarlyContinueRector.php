@@ -27,11 +27,6 @@ use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
-/**
- * Replaces the deprecated upstream ChangeNestedForeachIfsToEarlyContinueRector. Only a loop body made of
- * nothing but at least two nested, else-less ifs is flattened, so no code before or after an if changes
- * whether it runs.
- */
 final class ForeachNestedIfsToEarlyContinueRector extends AbstractRector
 {
     protected const INVERSE_COMPARISONS = [

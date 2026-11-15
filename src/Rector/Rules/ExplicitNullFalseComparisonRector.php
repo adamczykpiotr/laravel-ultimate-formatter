@@ -75,9 +75,6 @@ AFTER,
     }
 
     /**
-     * Only a bool or an object-or-null has one falsy value; a string, int or array is left alone, since
-     * its truthiness check covers several values.
-     *
      * @param Expr $expr
      *
      * @return 'false'|'null'|null
@@ -92,6 +89,7 @@ AFTER,
         $withoutNull = TypeCombinator::removeNull($type);
         $isNullableObject = TypeCombinator::containsNull($type) && $withoutNull->isObject()->yes();
 
+        // A string, int or array has several falsy values, so `!` can't become a single comparison.
         return $isNullableObject ? 'null' : null;
     }
 }
