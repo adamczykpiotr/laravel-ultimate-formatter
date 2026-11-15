@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\PhpStan;
 
+use AdamczykPiotr\UltimateFormatter\Config\ConfigReader;
 use PhpParser\Node;
 use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Error;
@@ -13,7 +14,7 @@ use UnexpectedValueException;
 
 class RuleFlags implements IgnoreErrorExtension
 {
-    protected const DEFAULT_CONFIG_FILE = __DIR__ . '/../../config/ultimate-formatter.php';
+    protected const FLAGS_KEY = 'phpstan-rules';
 
     /**
      * @var array<string, bool>
@@ -22,13 +23,15 @@ class RuleFlags implements IgnoreErrorExtension
 
     /**
      * @param string $publishedConfigFile
+     * @param ConfigReader $configReader
      */
     public function __construct(
         protected readonly string $publishedConfigFile,
+        protected readonly ConfigReader $configReader = new ConfigReader(),
     ) {
         // Read on every run, not baked into PHPStan's cached container, so flipping a flag takes effect at once.
-        $defaults = $this->flags(self::DEFAULT_CONFIG_FILE);
-        $published = $this->flags($publishedConfigFile);
+        $defaults = $this->flags($configReader->defaultSection(self::FLAGS_KEY), ConfigReader::DEFAULT_CONFIG_FILE);
+        $published = $this->flags($configReader->publishedSection($publishedConfigFile, self::FLAGS_KEY), $publishedConfigFile);
 
         // Only the ruleset's own rules can be turned off; any other error is left to ignoreErrors. A typo or a
         // renamed identifier would otherwise leave its rule on without a word, so it stops the run instead.
@@ -65,28 +68,22 @@ class RuleFlags implements IgnoreErrorExtension
     }
 
     /**
+     * @param mixed $rules
      * @param string $configFile
      *
      * @return array<string, bool>
      */
-    protected function flags(string $configFile): array
+    protected function flags(mixed $rules, string $configFile): array
     {
-        // PHPStan runs without Laravel, so the config file is read directly.
-        $config = is_file($configFile) ? require $configFile : [];
-        $rules = is_array($config) ? $config['phpstan-rules'] ?? [] : [];
+        $rules ??= [];
         if (is_array($rules) === false) {
             throw new UnexpectedValueException("Config ultimate-formatter.phpstan-rules in {$configFile} must map rule identifiers to booleans.");
         }
 
-        $flags = [];
-        foreach ($rules as $rule => $enabled) {
-            if (is_string($rule) === false || is_bool($enabled) === false) {
-                throw new UnexpectedValueException("Config ultimate-formatter.phpstan-rules.{$rule} in {$configFile} must be true or false.");
-            }
-
-            $flags[$rule] = $enabled;
-        }
-
-        return $flags;
+        return collect($rules)
+            ->mapWithKeys(fn(mixed $enabled, int|string $rule): array => is_string($rule) && is_bool($enabled)
+                ? [$rule => $enabled]
+                : throw new UnexpectedValueException("Config ultimate-formatter.phpstan-rules.{$rule} in {$configFile} must be true or false."))
+            ->all();
     }
 }

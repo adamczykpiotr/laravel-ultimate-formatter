@@ -9,6 +9,7 @@ use AdamczykPiotr\UltimateFormatter\Tests\TestCase;
 use Illuminate\Support\Str;
 use PhpCsFixer\Config;
 use Rector\Configuration\RectorConfigBuilder;
+use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Filesystem\Filesystem;
@@ -230,11 +231,11 @@ class InstallCommandTest extends TestCase
 
         $this->runInstall();
 
-        $composer = json_decode($this->readProjectFile('composer.json'), true);
+        $scripts = $this->composerScripts();
         $this->assertSame([
             'check' => 'vendor/bin/ultimate-formatter check',
             'format' => 'vendor/bin/ultimate-formatter format',
-        ], data_get($composer, 'scripts'));
+        ], $scripts);
     }
 
     /**
@@ -257,11 +258,11 @@ class InstallCommandTest extends TestCase
         $this->runInstall();
         $this->runInstall();
 
-        $composer = json_decode($this->readProjectFile('composer.json'), true);
+        $scripts = $this->composerScripts();
         $this->assertSame([
             '@php artisan vendor:publish --tag=laravel-assets --ansi --force',
             'vendor/bin/ultimate-formatter migrate-config',
-        ], data_get($composer, 'scripts.post-update-cmd'));
+        ], $scripts['post-update-cmd']);
     }
 
     /**
@@ -275,8 +276,8 @@ class InstallCommandTest extends TestCase
 
         $this->runInstall();
 
-        $composer = json_decode($this->readProjectFile('composer.json'), true);
-        $this->assertSame(['custom', 'vendor/bin/ultimate-formatter migrate-config'], data_get($composer, 'scripts.post-update-cmd'));
+        $scripts = $this->composerScripts();
+        $this->assertSame(['custom', 'vendor/bin/ultimate-formatter migrate-config'], $scripts['post-update-cmd']);
     }
 
     /**
@@ -289,8 +290,8 @@ class InstallCommandTest extends TestCase
 
         $this->runInstall();
 
-        $composer = json_decode($this->readProjectFile('composer.json'), true);
-        $this->assertNull(data_get($composer, 'scripts.post-update-cmd'));
+        $scripts = $this->composerScripts();
+        $this->assertArrayNotHasKey('post-update-cmd', $scripts);
     }
 
     /**
@@ -489,6 +490,18 @@ class InstallCommandTest extends TestCase
         $tester = new CommandTester(new InstallCommand());
 
         return $tester->execute(['--path' => $this->projectPath, ...$options]);
+    }
+
+    /**
+     * @return array<array-key, mixed>
+     */
+    protected function composerScripts(): array
+    {
+        $composer = json_decode($this->readProjectFile('composer.json'));
+        $this->assertInstanceOf(stdClass::class, $composer);
+        $this->assertInstanceOf(stdClass::class, $composer->scripts);
+
+        return get_object_vars($composer->scripts);
     }
 
     /**

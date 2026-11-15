@@ -47,7 +47,7 @@ class UltimateFormatterServiceProvider extends PackageServiceProvider
                 return;
             }
 
-            (new MigrateConfigCommand())->run(new ArrayInput(['--path' => $this->app->basePath()]), $event->output);
+            resolve(MigrateConfigCommand::class)->run(new ArrayInput(['--path' => $this->app->basePath()]), $event->output);
         });
     }
 }

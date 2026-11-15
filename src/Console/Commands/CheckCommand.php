@@ -4,21 +4,33 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Console\Commands;
 
-use Illuminate\Support\Arr;
+use AdamczykPiotr\UltimateFormatter\Config\ConfigReader;
+use AdamczykPiotr\UltimateFormatter\Console\Tool;
+use AdamczykPiotr\UltimateFormatter\Console\ToolRunner;
+use AdamczykPiotr\UltimateFormatter\Exceptions\PhpStanConfigNotLoadableException;
+use AdamczykPiotr\UltimateFormatter\PhpStan\PhpStanSetup;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Process;
 
 #[AsCommand(name: 'formatter:check', description: 'Dry-run Rector and PHP CS Fixer, then run PHPStan, failing on any pending change or error')]
 class CheckCommand extends FormatterCommand
 {
-    protected const PHPSTAN_SCRIPT = 'vendor/bin/phpstan';
-
-    // phpstan-rules.neon declares this parameter, so PHPStan only knows it when the ruleset is loaded.
-    protected const RULESET_PARAMETER = 'ultimateFormatterConfigFile';
     protected const WITHOUT_RULESET_OPTION = 'without-phpstan-ruleset';
+
+    /**
+     * @param ConfigReader $configReader
+     * @param ToolRunner $toolRunner
+     * @param PhpStanSetup $phpStanSetup
+     */
+    public function __construct(
+        protected readonly ConfigReader $configReader = new ConfigReader(),
+        protected readonly ToolRunner $toolRunner = new ToolRunner(),
+        protected readonly PhpStanSetup $phpStanSetup = new PhpStanSetup(),
+    ) {
+        parent::__construct();
+    }
 
     /**
      * @return void
@@ -38,20 +50,22 @@ class CheckCommand extends FormatterCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $path = $this->projectPath($input);
+
         // Without the ruleset PHPStan passes code the ruleset bans, so check it before spending time on the formatters.
-        $phpstanConfigFile = $this->phpstanConfigFile($this->projectPath($input));
+        $phpstanConfigFile = $this->phpStanSetup->configFile($path);
         $requiresRuleset = $phpstanConfigFile !== null && $input->getOption(self::WITHOUT_RULESET_OPTION) === false;
-        if ($requiresRuleset && $this->loadsRuleset($phpstanConfigFile, $input, $output) === false) {
+        if ($requiresRuleset && $this->loadsRuleset($path, $phpstanConfigFile, $output) === false) {
             return self::FAILURE;
         }
 
         // The fixer would check code Rector still has to change, so stop at the first failure like `format` does.
-        $rectorExitCode = $this->runPhpScript(self::RECTOR_SCRIPT, $this->configuredArguments($input, 'check.rector'), $input, $output);
+        $rectorExitCode = $this->toolRunner->run(Tool::RECTOR, $this->configReader->arguments($path, 'check', 'rector'), $path, $output);
         if ($rectorExitCode !== self::SUCCESS) {
             return self::FAILURE;
         }
 
-        $fixerExitCode = $this->runPhpScript('vendor/bin/php-cs-fixer', $this->configuredArguments($input, 'check.php-cs-fixer'), $input, $output);
+        $fixerExitCode = $this->toolRunner->run(Tool::PHP_CS_FIXER, $this->configReader->arguments($path, 'check', 'php-cs-fixer'), $path, $output);
         if ($fixerExitCode !== self::SUCCESS) {
             return self::FAILURE;
         }
@@ -63,7 +77,7 @@ class CheckCommand extends FormatterCommand
             return self::SUCCESS;
         }
 
-        $phpstanExitCode = $this->runPhpScript(self::PHPSTAN_SCRIPT, $this->configuredArguments($input, 'check.phpstan'), $input, $output);
+        $phpstanExitCode = $this->toolRunner->run(Tool::PHPSTAN, $this->configReader->arguments($path, 'check', 'phpstan'), $path, $output);
         if ($phpstanExitCode !== self::SUCCESS) {
             return self::FAILURE;
         }
@@ -72,59 +86,53 @@ class CheckCommand extends FormatterCommand
     }
 
     /**
-     * Asks PHPStan for its resolved parameters, so a ruleset included through another neon file counts too.
-     *
+     * @param string $path
      * @param string $phpstanConfigFile
-     * @param InputInterface $input
      * @param OutputInterface $output
      *
      * @return bool
      */
-    protected function loadsRuleset(string $phpstanConfigFile, InputInterface $input, OutputInterface $output): bool
+    protected function loadsRuleset(string $path, string $phpstanConfigFile, OutputInterface $output): bool
     {
-        // Symfony Console exports -q as SHELL_VERBOSITY, which would leave PHPStan's parameters unprinted.
-        $process = new Process(
-            [PHP_BINARY, self::PHPSTAN_SCRIPT, 'dump-parameters', '--json'],
-            $this->projectPath($input),
-            ['SHELL_VERBOSITY' => false],
-            timeout: null,
-        );
-        $process->run();
-        if ($process->isSuccessful() === false) {
+        try {
+            $loadsRuleset = $this->phpStanSetup->loadsRuleset($path);
+        } catch (PhpStanConfigNotLoadableException $exception) {
             $output->writeln("<error>PHPStan could not load {$phpstanConfigFile}:</error>");
-            $output->writeln(trim($process->getErrorOutput() . $process->getOutput()));
-            $this->writeRulesetIncludes($phpstanConfigFile, $input, $output);
+            $output->writeln($exception->getMessage());
+            $this->writeRulesetIncludes($path, $phpstanConfigFile, $output);
 
             return false;
         }
 
-        $parameters = json_decode($process->getOutput(), true);
-        if (is_array($parameters) && Arr::has($parameters, self::RULESET_PARAMETER)) {
+        if ($loadsRuleset) {
             return true;
         }
 
         $output->writeln("<error>{$phpstanConfigFile} doesn't load the formatter's PHPStan ruleset, so its rules never run.</error>");
-        $this->writeRulesetIncludes($phpstanConfigFile, $input, $output);
+        $this->writeRulesetIncludes($path, $phpstanConfigFile, $output);
 
         return false;
     }
 
     /**
+     * @param string $path
      * @param string $phpstanConfigFile
-     * @param InputInterface $input
      * @param OutputInterface $output
      *
      * @return void
      */
-    protected function writeRulesetIncludes(string $phpstanConfigFile, InputInterface $input, OutputInterface $output): void
+    protected function writeRulesetIncludes(string $path, string $phpstanConfigFile, OutputInterface $output): void
     {
-        $output->writeln("Make sure {$phpstanConfigFile} includes:");
-        $output->writeln('');
-        $output->writeln('includes:');
-        foreach ($this->phpstanIncludes($this->projectPath($input)) as $include) {
-            $output->writeln("    - {$include}");
-        }
-        $output->writeln('');
-        $output->writeln('Or pass --' . self::WITHOUT_RULESET_OPTION . ' to run PHPStan without it.');
+        $includeLines = collect($this->phpStanSetup->includes($path))->map(fn(string $include): string => "    - {$include}");
+        $withoutRulesetOption = self::WITHOUT_RULESET_OPTION;
+
+        $output->writeln([
+            "Make sure {$phpstanConfigFile} includes:",
+            '',
+            'includes:',
+            ...$includeLines->all(),
+            '',
+            "Or pass --{$withoutRulesetOption} to run PHPStan without it.",
+        ]);
     }
 }
