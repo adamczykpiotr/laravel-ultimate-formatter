@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.5](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.4...v1.13.5) (2026-11-15)
+
+
+### Bug Fixes
+
+* **check:** find the PHPStan ruleset when run with -q ([#46](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/46)) ([7e19417](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/7e194176acb5ac5a97f2360357a0f4934b315ace))
+
 ## [1.13.4](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.3...v1.13.4) (2026-11-15)
 
 
