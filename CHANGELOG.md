@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.14.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.7...v1.14.0) (2026-11-15)
+
+
+### Features
+
+* **refactor:** split commands into services with typed results ([#52](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/52)) ([a433f34](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/a433f3496089a338ac0a5bc2e851e3c4ca28297e))
+
 ## [1.13.7](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.6...v1.13.7) (2026-11-15)
 
 
