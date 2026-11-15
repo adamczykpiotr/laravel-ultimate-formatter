@@ -6,6 +6,7 @@ namespace AdamczykPiotr\UltimateFormatter\Tests\Feature;
 
 use AdamczykPiotr\UltimateFormatter\Console\Commands\InstallCommand;
 use AdamczykPiotr\UltimateFormatter\Tests\TestCase;
+use Illuminate\Support\Str;
 use PhpCsFixer\Config;
 use Rector\Configuration\RectorConfigBuilder;
 use Symfony\Component\Console\Command\Command;
@@ -338,9 +339,9 @@ class InstallCommandTest extends TestCase
         $this->assertStringContainsString("php-version: '8.4'", $workflow);
         $this->assertStringContainsString('group: ${{ github.workflow }}-${{ github.ref }}', $workflow);
         $this->assertStringContainsString('run: composer check', $workflow);
-        $this->assertSame(
+        $this->assertCount(
             substr_count($workflow, 'uses:'),
-            preg_match_all('/uses: [\w.\/-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/m', $workflow),
+            Str::matchAll('/uses: [\w.\/-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/m', $workflow),
         );
     }
 
@@ -411,7 +412,7 @@ class InstallCommandTest extends TestCase
         $defaults = require __DIR__ . '/../../vendor/barryvdh/laravel-ide-helper/config/ide-helper.php';
         $this->assertIsArray($published);
         $this->assertIsArray($defaults);
-        $this->assertSame([], array_diff_key($published, $defaults));
+        $this->assertSame([], collect($published)->diffKeys($defaults)->all());
         $this->assertFalse($published['write_model_magic_where']);
     }
 

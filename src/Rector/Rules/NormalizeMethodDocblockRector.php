@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Rector\Rules;
 
+use Illuminate\Support\Collection;
 use PhpParser\Comment;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -70,7 +71,7 @@ final class NormalizeMethodDocblockRector extends AbstractRector
             return null;
         }
 
-        $originalComments = array_values($node->getComments());
+        $originalComments = collect($node->getComments())->values();
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
         $paramsChanged = $this->normalizeParamTags($node, $phpDocInfo);
         $returnChanged = $this->normalizeReturnTag($node, $phpDocInfo);
@@ -127,11 +128,11 @@ AFTER,
 
     /**
      * @param ClassMethod $node
-     * @param list<Comment> $originalComments
+     * @param Collection<int, Comment> $originalComments
      *
      * @return void
      */
-    protected function restoreBlankLinesAfterComments(ClassMethod $node, array $originalComments): void
+    protected function restoreBlankLinesAfterComments(ClassMethod $node, Collection $originalComments): void
     {
         // A changed docblock makes Rector reprint every comment above the node joined by single newlines.
         $comments = $node->getComments();
@@ -141,9 +142,7 @@ AFTER,
                 continue;
             }
 
-            $nextStartLine = isset($originalComments[$index + 1])
-                ? $originalComments[$index + 1]->getStartLine()
-                : $node->getStartLine();
+            $nextStartLine = $originalComments->get($index + 1)?->getStartLine() ?? $node->getStartLine();
             if ($nextStartLine - $original->getEndLine() < 2) {
                 continue;
             }

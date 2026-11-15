@@ -32,9 +32,9 @@ class RuleFlags implements IgnoreErrorExtension
 
         // Only the ruleset's own rules can be turned off; any other error is left to ignoreErrors. A typo or a
         // renamed identifier would otherwise leave its rule on without a word, so it stops the run instead.
-        $unknown = array_keys(array_diff_key($published, $defaults));
-        if ($unknown !== []) {
-            $rules = implode(', ', $unknown);
+        $unknown = collect($published)->diffKeys($defaults)->keys();
+        if ($unknown->isNotEmpty()) {
+            $rules = $unknown->implode(', ');
 
             throw new UnexpectedValueException("Config ultimate-formatter.phpstan-rules in {$publishedConfigFile} has unknown rules: {$rules}. Use the identifiers listed in docs/phpstan-ruleset.md.");
         }
