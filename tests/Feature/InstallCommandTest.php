@@ -9,6 +9,7 @@ use AdamczykPiotr\UltimateFormatter\Tests\TestCase;
 use Illuminate\Support\Str;
 use PhpCsFixer\Config;
 use Rector\Configuration\RectorConfigBuilder;
+use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Filesystem\Filesystem;
@@ -466,16 +467,15 @@ class InstallCommandTest extends TestCase
     }
 
     /**
-     * @return list<mixed>
+     * @return array<array-key, mixed>
      */
     protected function composerScripts(): array
     {
-        $composer = json_decode($this->readProjectFile('composer.json'), true);
-        $this->assertIsArray($composer);
-        $scripts = $composer['scripts'] ?? [];
-        $this->assertIsArray($scripts);
+        $composer = json_decode($this->readProjectFile('composer.json'));
+        $this->assertInstanceOf(stdClass::class, $composer);
+        $this->assertInstanceOf(stdClass::class, $composer->scripts);
 
-        return $scripts;
+        return get_object_vars($composer->scripts);
     }
 
     /**
