@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.10.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.9.0...v1.10.0) (2026-11-15)
+
+
+### Features
+
+* enable more Rector and PHP CS Fixer rules, guard against conflicting sets ([#36](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/36)) ([e990bbb](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/e990bbbee5e09b693284513b6d991dc6a57b4035)), closes [#19](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/19)
+
 # [1.9.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.8.0...v1.9.0) (2026-11-15)
 
 
