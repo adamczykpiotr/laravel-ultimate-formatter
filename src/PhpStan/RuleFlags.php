@@ -16,6 +16,9 @@ class RuleFlags implements IgnoreErrorExtension
 {
     protected const FLAGS_KEY = 'phpstan-rules';
 
+    // docs/ is export-ignored, so the installed package has no copy of the list to point at.
+    protected const RULESET_DOCS_URL = 'https://github.com/adamczykpiotr/laravel-ultimate-formatter/blob/main/docs/phpstan-ruleset.md';
+
     /**
      * @var array<string, bool>
      */
@@ -39,7 +42,7 @@ class RuleFlags implements IgnoreErrorExtension
         if ($unknown->isNotEmpty()) {
             $rules = $unknown->implode(', ');
 
-            throw new UnexpectedValueException("Config ultimate-formatter.phpstan-rules in {$publishedConfigFile} has unknown rules: {$rules}. Use the identifiers listed in docs/phpstan-ruleset.md.");
+            throw new UnexpectedValueException("Config ultimate-formatter.phpstan-rules in {$publishedConfigFile} has unknown rules: {$rules}. Use the identifiers listed in " . self::RULESET_DOCS_URL . '.');
         }
 
         $this->rules = $published + $defaults;

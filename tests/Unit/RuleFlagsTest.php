@@ -110,6 +110,10 @@ class RuleFlagsTest extends TestCase
                 "['phpstan-rules' => ['ultimateFormatter.disallowSprintF' => false]]",
                 'has unknown rules: ultimateFormatter.disallowSprintF.',
             ],
+            'unknown rule points to the ruleset docs' => [
+                "['phpstan-rules' => ['ultimateFormatter.disallowSprintF' => false]]",
+                'Use the identifiers listed in https://github.com/adamczykpiotr/laravel-ultimate-formatter/blob/main/docs/phpstan-ruleset.md.',
+            ],
             'error identifier from outside the ruleset' => [
                 "['phpstan-rules' => ['argument.type' => false]]",
                 'has unknown rules: argument.type.',
