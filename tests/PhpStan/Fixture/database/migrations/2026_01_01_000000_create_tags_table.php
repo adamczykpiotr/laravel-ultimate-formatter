@@ -11,4 +11,8 @@ return new class extends Migration
     {
         Tag::query()->delete();
     }
+
+    public function down(): void
+    {
+    }
 };

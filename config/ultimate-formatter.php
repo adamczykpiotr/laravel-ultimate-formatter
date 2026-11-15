@@ -42,6 +42,31 @@ return [
 
         /*
         |--------------------------------------------------------------------------
+        | Migrations
+        |--------------------------------------------------------------------------
+        */
+
+        'ultimateFormatter.migrationTimestampsLast' => true,
+        'ultimateFormatter.migrationUpAndDown' => true,
+        'ultimateFormatter.migrationLiteralSchemaNames' => true,
+        'ultimateFormatter.migrationSchemaClosure' => true,
+        'ultimateFormatter.migrationForeignIdConstrained' => true,
+
+        /*
+        |--------------------------------------------------------------------------
+        | Resources, enums, queued classes and models
+        |--------------------------------------------------------------------------
+        */
+
+        'ultimateFormatter.resourceKeysCamelCase' => true,
+        'ultimateFormatter.enumCasesUpperSnakeCase' => true,
+        'ultimateFormatter.enumValuesMatchCaseNames' => true,
+        'ultimateFormatter.queuedClassNoPrivateProperties' => true,
+        'ultimateFormatter.modelNoWith' => true,
+        'ultimateFormatter.modelNoAppends' => true,
+
+        /*
+        |--------------------------------------------------------------------------
         | Larastan
         |--------------------------------------------------------------------------
         */

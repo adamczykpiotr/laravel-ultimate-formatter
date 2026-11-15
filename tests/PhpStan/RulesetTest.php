@@ -13,6 +13,11 @@ class RulesetTest extends TestCase
     protected const FIXTURE_DIRECTORY = __DIR__ . '/Fixture';
 
     /**
+     * The fixtures peak near PHPStan's 128M default.
+     */
+    protected const PHPSTAN_MEMORY_LIMIT = '--memory-limit=1G';
+
+    /**
      * @return void
      */
     public function test_reports_every_banned_call_and_architecture_violation(): void
@@ -23,12 +28,24 @@ class RulesetTest extends TestCase
             'app/Dto/Tag/Input/TagRename.php:7 phpat.testInputDtosAreNamedInput',
             'app/Dto/Tag/Input/TagRename.php:7 phpat.testInputDtosExtendBaseInput',
             'app/Dto/Tag/TagSummary.php:7 phpat.testOutputDtosAreNamedDto',
+            'app/Enums/TagStatus.php:10 ultimateFormatter.enumValuesMatchCaseNames',
+            'app/Enums/TagStatus.php:11 ultimateFormatter.enumCasesUpperSnakeCase',
+            'app/Enums/TagStatus.php:11 ultimateFormatter.enumValuesMatchCaseNames',
             'app/Exceptions/TagLocked.php:9 phpat.testExceptionsAreNamedException',
             'app/Exceptions/TagLocked.php:9 phpat.testExceptionsExtendBaseException',
             'app/Http/Controllers/TagController.php:13 ultimateFormatter.disallowResponseJson',
             'app/Http/Controllers/TagHandler.php:7 phpat.testControllersAreNamedController',
             'app/Http/Requests/TagStoreRequest.php:9 phpat.testNoClassExtendsFormRequest',
             'app/Http/Resources/TagPayload.php:9 phpat.testResourcesAreNamedResource',
+            'app/Http/Resources/TagResource.php:17 ultimateFormatter.resourceKeysCamelCase',
+            'app/Http/Resources/TagResource.php:20 ultimateFormatter.resourceKeysCamelCase',
+            'app/Http/Resources/TagResource.php:23 ultimateFormatter.resourceKeysCamelCase',
+            'app/Http/Resources/TagResource.php:26 ultimateFormatter.resourceKeysCamelCase',
+            'app/Http/Resources/TagResource.php:29 ultimateFormatter.resourceKeysCamelCase',
+            'app/Jobs/SyncTagJob.php:13 ultimateFormatter.queuedClassNoPrivateProperties',
+            'app/Jobs/SyncTagJob.php:17 ultimateFormatter.queuedClassNoPrivateProperties',
+            'app/Models/Post.php:13 ultimateFormatter.modelNoWith',
+            'app/Models/Post.php:15 ultimateFormatter.modelNoAppends',
             'app/Services/TagExporter.php:7 phpat.testServicesAreFinal',
             'app/Services/TagExporter.php:7 phpat.testServicesAreReadonly',
             'app/Services/TagOwnerService.php:13 phpat.testServicesDoNotDependOnRequestResponse',
@@ -52,6 +69,16 @@ class RulesetTest extends TestCase
             'app/Services/TagService.php:31 ultimateFormatter.disallowModelMassAssignment',
             'app/Services/TagService.php:34 ultimateFormatter.disallowAppEnvironment',
             'database/migrations/2026_01_01_000000_create_tags_table.php:12 phpat.testMigrationsDoNotDependOnModels',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:19 ultimateFormatter.migrationForeignIdConstrained',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:20 ultimateFormatter.migrationLiteralSchemaNames',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:22 ultimateFormatter.migrationTimestampsLast',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:23 ultimateFormatter.migrationTimestampsLast',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:26 ultimateFormatter.migrationLiteralSchemaNames',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:27 ultimateFormatter.migrationLiteralSchemaNames',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:32 ultimateFormatter.migrationLiteralSchemaNames',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:36 ultimateFormatter.migrationSchemaClosure',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:38 ultimateFormatter.migrationSchemaClosure',
+            'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:9 ultimateFormatter.migrationUpAndDown',
             'tests/TagServiceTest.php:15 ultimateFormatter.disallowLogShouldReceive',
             'tests/TagServiceTest.php:19 ultimateFormatter.disallowAppEnvironment',
         ], $this->analyseFixtures());
@@ -134,7 +161,7 @@ class RulesetTest extends TestCase
     protected function analyseFixtures(string $configFile = self::FIXTURE_DIRECTORY . '/phpstan.neon'): array
     {
         $process = new Process(
-            [PHP_BINARY, 'vendor/bin/phpstan', 'analyse', "--configuration={$configFile}", '--error-format=json', '--no-progress'],
+            [PHP_BINARY, 'vendor/bin/phpstan', 'analyse', "--configuration={$configFile}", '--error-format=json', '--no-progress', self::PHPSTAN_MEMORY_LIMIT],
             __DIR__ . '/../..',
             timeout: null,
         );
