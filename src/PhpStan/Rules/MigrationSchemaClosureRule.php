@@ -20,7 +20,8 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * Larastan skips arrow functions when it reads the schema from the migrations.
+ * Larastan reads every closure form, but without the Blueprint type PHPStan doesn't know what $table is, so the other
+ * migration rules can't check the calls on it.
  *
  * @implements Rule<CallLike>
  */
@@ -54,7 +55,7 @@ class MigrationSchemaClosureRule implements Rule
         foreach ($node->getArgs() as $arg) {
             $callback = $arg->value;
             if ($callback instanceof ArrowFunction || ($callback instanceof Closure && $this->hasSchemaSignature($callback, $scope) === false)) {
-                $errors[] = RuleErrorBuilder::message('Schema closures are function (Blueprint $table): void, never fn, so Larastan can read the schema.')
+                $errors[] = RuleErrorBuilder::message('Schema closures are function (Blueprint $table): void, never fn, so PHPStan knows $table is a Blueprint and the migration rules can check it.')
                     ->identifier('ultimateFormatter.migrationSchemaClosure')
                     ->line($callback->getStartLine())
                     ->build();

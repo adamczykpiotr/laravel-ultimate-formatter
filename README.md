@@ -235,8 +235,8 @@ Rector runs 4 parallel processes by default to stay within container memory limi
 `phpstan-rules.neon` reports what the formatters can't fix safely: banned calls (`sprintf`, the
 `array_*` and `preg_*` functions, request and response helpers in services, mass assignment, ...) and
 architecture rules (class naming, base classes, final readonly services kept out of the request and
-response, migrations kept off models), and custom rules for what neither can express: migrations
-Larastan can read (literal names, typed closures, `timestamps()` last, `up()` and `down()`,
+response, migrations kept off models), and custom rules for what neither can express: migration
+conventions (literal names Larastan can read, typed closures, `timestamps()` last, `up()` and `down()`,
 `foreignId()->constrained()`), camelCase resource keys, `UPPER_SNAKE_CASE` string enums, no `private`
 properties on queued classes and no `$with` or `$appends` on models. Each rule has its own identifier
 for baselines and `ignoreErrors`. See [docs/phpstan-ruleset.md](docs/phpstan-ruleset.md) for the full list.

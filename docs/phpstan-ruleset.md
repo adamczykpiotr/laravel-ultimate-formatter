@@ -50,8 +50,9 @@ The invariants that neither disallowed-calls nor phpat can express, one class ea
 ### Migrations
 
 These run inside classes that extend `Illuminate\Database\Migrations\Migration`. Larastan reads the
-schema from the migrations to type the model properties, and it skips schema calls whose names it
-can't read and arrow functions, so a dropped column would stay typed as present.
+schema from the migrations to type the model properties, and it skips schema calls whose names aren't
+string literals, so a dropped column would stay typed as present. The closure rule is what lets the
+others work: PHPStan only knows `$table` is a `Blueprint` when the parameter says so.
 
 | Rule                                                                                                                   | Identifier                                        |
 |------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
