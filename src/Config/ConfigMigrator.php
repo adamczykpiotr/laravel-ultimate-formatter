@@ -4,54 +4,32 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Config;
 
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Symfony\Component\Filesystem\Filesystem;
 use UnexpectedValueException;
 
-/**
- * Brings a published config/ultimate-formatter.php up to date with the package. The published file records the last
- * migration applied to it under config-version, so each migration runs once. A change is checked against the file
- * before it applies, so a file the project already edited by hand is left as it is.
- */
 class ConfigMigrator
 {
-    public const VERSION_KEY = 'config-version';
+    public const DIFFS_DIRECTORY = __DIR__ . '/../../config/diffs';
+    protected const VERSION_PATTERN = "/^\\s*'config-version'\\s*=>\\s*'([^']*)'\\s*,\\s*$/";
+    protected const INITIAL_VERSION = '0.0.0';
+    protected const KEY_PATTERN = "/^\\s*'([^']+)'\\s*=>(.*)$/";
+    protected const RETURN_LINE = 'return [';
 
     /**
-     * @var array<int, list<ConfigChange>>
+     * @param string $diffsDirectory
      */
-    protected readonly array $migrations;
+    public function __construct(
+        protected readonly string $diffsDirectory = self::DIFFS_DIRECTORY,
+    ) {}
 
     /**
-     * @param array<int, list<ConfigChange>>|null $migrations
+     * @return string
      */
-    public function __construct(array|null $migrations = null)
+    public function latestVersion(): string
     {
-        $this->migrations = $migrations ?? self::migrations();
-    }
-
-    /**
-     * The changes to config/ultimate-formatter.php, by version, starting at 1. A release that adds, removes or renames
-     * a key adds the next version here and sets config-version in config/ultimate-formatter.php to it, for example:
-     *
-     *     1 => [
-     *         ConfigChange::added(['phpstan-rules', 'ultimateFormatter.disallowDd'], true, after: 'ultimateFormatter.disallowSprintf'),
-     *         ConfigChange::renamed(['phpstan-rules', 'ultimateFormatter.disallowEnv'], 'ultimateFormatter.disallowEnvCalls'),
-     *         ConfigChange::removed(['format', 'ide-helper']),
-     *     ],
-     *
-     * @return array<int, list<ConfigChange>>
-     */
-    public static function migrations(): array
-    {
-        return [];
-    }
-
-    /**
-     * @return int
-     */
-    public function latestVersion(): int
-    {
-        return $this->migrations === [] ? 0 : max(array_keys($this->migrations));
+        return $this->versions()->last() ?? self::INITIAL_VERSION;
     }
 
     /**
@@ -63,120 +41,292 @@ class ConfigMigrator
     public function migrate(string $configFile, bool $dryRun = false): ConfigMigration
     {
         $filesystem = new Filesystem();
-        $config = PhpConfigFile::parse($filesystem->readFile($configFile));
-        $fromVersion = $config->intValue([self::VERSION_KEY]) ?? 0;
+        $lines = explode("\n", $filesystem->readFile($configFile));
+        $fromVersion = $this->publishedVersion($lines);
         $toVersion = $this->latestVersion();
-        if ($fromVersion >= $toVersion) {
+        if (version_compare($fromVersion, $toVersion, '>=')) {
             return new ConfigMigration($fromVersion, $fromVersion);
+        }
+
+        // The diffs leave the version line out, so it is lifted out while they apply and written back after.
+        $lines = array_values(collect($lines)->reject(fn(string $line): bool => preg_match(self::VERSION_PATTERN, $line) === 1)->all());
+        $returnLine = collect($lines)->search(fn(string $line): bool => trim($line) === self::RETURN_LINE);
+        if (is_int($returnLine) === false) {
+            throw new UnexpectedValueException('it does not return a [...] array');
         }
 
         $applied = [];
         $skipped = [];
-        $pendingChanges = collect($this->migrations)
-            ->filter(fn(array $changes, int $version): bool => $version > $fromVersion)
-            ->sortKeys()
-            ->flatMap(fn(array $changes): array => $changes);
-        foreach ($pendingChanges as $change) {
-            try {
-                [$config, $message] = $this->apply($config, $change);
-            } catch (UnexpectedValueException $exception) {
-                $skipped[] = 'Skipped ' . $this->describe($change) . ", {$exception->getMessage()}.";
+        $versions = $this->versions()->filter(fn(string $version): bool => version_compare($version, $fromVersion, '>'));
+        foreach ($versions as $version) {
+            foreach ($this->hunks("{$this->diffsDirectory}/{$version}.diff") as $hunk) {
+                $result = $this->applyHunk($lines, $hunk);
+                if ($result === null) {
+                    $hunkText = collect($hunk)->map(fn(array $line): string => "{$line[0]}{$line[1]}")->implode("\n");
+                    $skipped[] = "Skipped a change from config/diffs/{$version}.diff, the lines around it were edited:\n{$hunkText}";
 
-                continue;
-            }
+                    continue;
+                }
 
-            if ($message !== null) {
-                $applied[] = $message;
+                [$lines, $messages] = $result;
+                $applied = [...$applied, ...$messages];
             }
         }
 
-        // A skipped change is reported once, then left to the project, so the version moves on either way.
-        $config = $config->entry([self::VERSION_KEY]) === null
-            ? $config->add([], self::VERSION_KEY, $toVersion)
-            : $config->set([self::VERSION_KEY], $toVersion);
-
+        $lines = $this->withVersion($lines, $toVersion);
         if ($dryRun === false) {
-            $filesystem->dumpFile($configFile, $config->contents());
+            $filesystem->dumpFile($configFile, implode("\n", $lines));
         }
 
         return new ConfigMigration($fromVersion, $toVersion, $applied, $skipped);
     }
 
     /**
-     * A change the file already reflects, such as removing a key that is gone, does nothing.
-     *
-     * @param PhpConfigFile $config
-     * @param ConfigChange $change
-     *
-     * @return array{PhpConfigFile, string|null}
+     * @return Collection<int, string>
      */
-    protected function apply(PhpConfigFile $config, ConfigChange $change): array
+    protected function versions(): Collection
     {
-        $key = implode('.', $change->path);
-
-        return match ($change->type) {
-            ConfigChangeType::ADDED => $this->add($config, $change),
-            ConfigChangeType::REMOVED => $config->entry($change->path) === null
-                ? [$config, null]
-                : [$config->remove($change->path), "Removed {$key}."],
-            ConfigChangeType::RENAMED => $this->rename($config, $change),
-        };
+        return collect(glob("{$this->diffsDirectory}/*.diff") ?: [])
+            ->map(fn(string $file): string => basename($file, '.diff'))
+            ->sort(fn(string $first, string $second): int => version_compare($first, $second))
+            ->values();
     }
 
     /**
-     * @param PhpConfigFile $config
-     * @param ConfigChange $change
-     *
-     * @return array{PhpConfigFile, string|null}
-     */
-    protected function add(PhpConfigFile $config, ConfigChange $change): array
-    {
-        // Without its array the whole section falls back to the package defaults, the new key included.
-        $parent = $config->array($change->parentPath());
-        if ($parent === null || isset($parent->entries[$change->key()])) {
-            return [$config, null];
-        }
-
-        $config = $config->add($change->parentPath(), $change->key(), $change->value, $change->after);
-
-        return [$config, 'Added ' . implode('.', $change->path) . '.'];
-    }
-
-    /**
-     * @param PhpConfigFile $config
-     * @param ConfigChange $change
-     *
-     * @return array{PhpConfigFile, string|null}
-     */
-    protected function rename(PhpConfigFile $config, ConfigChange $change): array
-    {
-        if ($config->entry($change->path) === null) {
-            return [$config, null];
-        }
-
-        $oldKey = implode('.', $change->path);
-        $newKey = implode('.', $change->newPath());
-        // The project already set the new key, so its value wins over the old one.
-        if ($config->entry($change->newPath()) !== null) {
-            return [$config->remove($change->path), "Removed {$oldKey}, {$newKey} already exists."];
-        }
-
-        return [$config->rename($change->path, (string)$change->newKey), "Renamed {$oldKey} to {$newKey}."];
-    }
-
-    /**
-     * @param ConfigChange $change
+     * @param list<string> $lines
      *
      * @return string
      */
-    protected function describe(ConfigChange $change): string
+    protected function publishedVersion(array $lines): string
     {
-        $key = implode('.', $change->path);
+        $versionLine = collect($lines)->first(fn(string $line): bool => preg_match(self::VERSION_PATTERN, $line) === 1);
 
-        return match ($change->type) {
-            ConfigChangeType::ADDED => "adding {$key}",
-            ConfigChangeType::REMOVED => "removing {$key}",
-            ConfigChangeType::RENAMED => "renaming {$key} to " . implode('.', $change->newPath()),
-        };
+        return is_string($versionLine) ? Str::match(self::VERSION_PATTERN, $versionLine) : self::INITIAL_VERSION;
+    }
+
+    /**
+     * @param list<string> $lines
+     * @param string $version
+     *
+     * @return list<string>
+     */
+    protected function withVersion(array $lines, string $version): array
+    {
+        $returnLine = (int)collect($lines)->search(fn(string $line): bool => trim($line) === self::RETURN_LINE);
+        $versionLines = ["    'config-version' => '{$version}',"];
+        if (trim($lines[$returnLine + 1] ?? '') !== '') {
+            $versionLines[] = '';
+        }
+
+        return [...array_slice($lines, 0, $returnLine + 1), ...$versionLines, ...array_slice($lines, $returnLine + 1)];
+    }
+
+    /**
+     * @param string $diffFile
+     *
+     * @return list<list<array{string, string}>>
+     */
+    protected function hunks(string $diffFile): array
+    {
+        $hunks = [];
+        $hunk = null;
+        foreach (explode("\n", (new Filesystem())->readFile($diffFile)) as $line) {
+            if (str_starts_with($line, '@@')) {
+                if ($hunk !== null) {
+                    $hunks[] = $hunk;
+                }
+
+                $hunk = [];
+
+                continue;
+            }
+
+            // The file headers come before the first hunk.
+            if ($hunk !== null && in_array(substr($line, 0, 1), [' ', '-', '+'], true)) {
+                $hunk[] = [substr($line, 0, 1), substr($line, 1)];
+            }
+        }
+
+        if ($hunk !== null) {
+            $hunks[] = $hunk;
+        }
+
+        return $hunks;
+    }
+
+    /**
+     * @param list<string> $lines
+     * @param list<array{string, string}> $hunk
+     *
+     * @return array{list<string>, list<string>}|null
+     */
+    protected function applyHunk(array $lines, array $hunk): array|null
+    {
+        $oldLines = array_values(collect($hunk)
+            ->reject(fn(array $line): bool => $line[0] === '+')
+            ->map(fn(array $line): string => $line[1])
+            ->all());
+        $start = $this->locate($lines, $oldLines);
+        if ($start === null) {
+            return null;
+        }
+
+        $position = $start;
+        $newLines = [];
+        $messages = [];
+        // Each - line is paired with the + line in the same place, so a changed default keeps the project's value.
+        $removedLines = [];
+        foreach ($hunk as [$operation, $text]) {
+            if ($operation === '-') {
+                $removedLines[] = [$text, $lines[$position]];
+                $position++;
+
+                continue;
+            }
+
+            if ($operation === ' ') {
+                $messages = [...$messages, ...$this->removalMessages($removedLines)];
+                $removedLines = [];
+                $newLines[] = $lines[$position];
+                $position++;
+
+                continue;
+            }
+
+            $removedLine = array_shift($removedLines);
+            [$replacement, $replacementMessages] = $removedLine === null
+                ? [[$text], $this->keyMessage('Added', $text)]
+                : $this->replaceLine($removedLine[0], $removedLine[1], $text);
+            $newLines = [...$newLines, ...$replacement];
+            $messages = [...$messages, ...$replacementMessages];
+        }
+
+        $messages = [...$messages, ...$this->removalMessages($removedLines)];
+        $lines = [...array_slice($lines, 0, $start), ...$newLines, ...array_slice($lines, $position)];
+
+        return [$lines, $messages];
+    }
+
+    /**
+     * A match on the exact lines wins; failing that, key lines match on the key alone, so a changed value still matches.
+     *
+     * @param list<string> $lines
+     * @param list<string> $oldLines
+     *
+     * @return int|null
+     */
+    protected function locate(array $lines, array $oldLines): int|null
+    {
+        if ($oldLines === []) {
+            return null;
+        }
+
+        $normalisers = [
+            fn(string $line): string => trim($line),
+            fn(string $line): string => $this->key($line) === null ? trim($line) : "'{$this->key($line)}' =>",
+        ];
+        if (count($oldLines) > count($lines)) {
+            return null;
+        }
+
+        foreach ($normalisers as $normalise) {
+            $needle = collect($oldLines)->map($normalise)->all();
+            $haystack = collect($lines)->map($normalise)->all();
+            $matches = collect(range(0, count($haystack) - count($needle)))
+                ->filter(fn(int $start): bool => array_slice($haystack, $start, count($needle)) === $needle);
+
+            // A key such as rector sits under both format and check, so an ambiguous match is not applied.
+            if ($matches->count() === 1) {
+                return $matches->first();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param string $oldDefault
+     * @param string $publishedLine
+     * @param string $newDefault
+     *
+     * @return array{list<string>, list<string>}
+     */
+    protected function replaceLine(string $oldDefault, string $publishedLine, string $newDefault): array
+    {
+        $oldKey = $this->key($oldDefault);
+        $newKey = $this->key($newDefault);
+        $isEdited = trim($publishedLine) !== trim($oldDefault);
+
+        if ($oldKey !== null && $oldKey === $newKey) {
+            if ($isEdited) {
+                $newValue = $this->value($newDefault);
+
+                return [[$publishedLine], ["Kept your value of {$newKey}, its default is now {$newValue}."]];
+            }
+
+            return [[$newDefault], ["Updated the default of {$newKey}."]];
+        }
+
+        return [[$newDefault], [...$this->removalMessages([[$oldDefault, $publishedLine]]), ...$this->keyMessage('Added', $newDefault)]];
+    }
+
+    /**
+     * @param list<array{string, string}> $removedLines
+     *
+     * @return list<string>
+     */
+    protected function removalMessages(array $removedLines): array
+    {
+        return array_values(collect($removedLines)
+            ->flatMap(function (array $removedLine): array {
+                [$oldDefault, $publishedLine] = $removedLine;
+                $key = $this->key($oldDefault);
+                if ($key === null) {
+                    return [];
+                }
+
+                // A diff can't tell a rename from a removal, so a value the project set is pointed out instead of carried over.
+                return trim($publishedLine) === trim($oldDefault)
+                    ? ["Removed {$key}."]
+                    : ["Removed {$key}, move your value {$this->value($publishedLine)} over if it still applies."];
+            })
+            ->all());
+    }
+
+    /**
+     * @param string $action
+     * @param string $line
+     *
+     * @return list<string>
+     */
+    protected function keyMessage(string $action, string $line): array
+    {
+        $key = $this->key($line);
+
+        return $key === null ? [] : ["{$action} {$key}."];
+    }
+
+    /**
+     * @param string $line
+     *
+     * @return string|null
+     */
+    protected function key(string $line): string|null
+    {
+        return preg_match(self::KEY_PATTERN, $line, $matches) === 1 ? $matches[1] : null;
+    }
+
+    /**
+     * @param string $line
+     *
+     * @return string|null
+     */
+    protected function value(string $line): string|null
+    {
+        if (preg_match(self::KEY_PATTERN, $line, $matches) !== 1) {
+            return null;
+        }
+
+        return rtrim(trim(Str::before($matches[2], ' //')), ',');
     }
 }

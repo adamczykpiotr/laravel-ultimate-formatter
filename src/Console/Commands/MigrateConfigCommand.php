@@ -34,8 +34,6 @@ class MigrateConfigCommand extends FormatterCommand
     }
 
     /**
-     * It runs from composer's post-update-cmd, so a config it can't migrate is reported without failing the update.
-     *
      * @param InputInterface $input
      * @param OutputInterface $output
      *
@@ -43,9 +41,10 @@ class MigrateConfigCommand extends FormatterCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $configFile = "{$this->projectPath($input)}/" . self::PUBLISHED_CONFIG_FILE;
+        $publishedFile = self::PUBLISHED_CONFIG_FILE;
+        $configFile = "{$this->projectPath($input)}/{$publishedFile}";
         if (is_file($configFile) === false) {
-            $output->writeln('Skipped the config migration, ' . self::PUBLISHED_CONFIG_FILE . ' is not published.', OutputInterface::VERBOSITY_VERBOSE);
+            $output->writeln("Skipped the config migration, {$publishedFile} is not published.", OutputInterface::VERBOSITY_VERBOSE);
 
             return self::SUCCESS;
         }
@@ -55,13 +54,14 @@ class MigrateConfigCommand extends FormatterCommand
         try {
             $migration = $this->migrator->migrate($configFile, $dryRun);
         } catch (UnexpectedValueException $exception) {
-            $output->writeln('<comment>Skipped the config migration, ' . self::PUBLISHED_CONFIG_FILE . " can't be edited: {$exception->getMessage()}.</comment>");
+            // It runs from composer's post-update-cmd, so a config it can't migrate must not fail the update.
+            $output->writeln("<comment>Skipped the config migration, {$publishedFile} can't be edited: {$exception->getMessage()}.</comment>");
 
             return self::SUCCESS;
         }
 
         if ($migration->isUpToDate()) {
-            $output->writeln(self::PUBLISHED_CONFIG_FILE . ' is up to date.', OutputInterface::VERBOSITY_VERBOSE);
+            $output->writeln("{$publishedFile} is up to date.", OutputInterface::VERBOSITY_VERBOSE);
 
             return self::SUCCESS;
         }
@@ -74,8 +74,8 @@ class MigrateConfigCommand extends FormatterCommand
             $output->writeln("<comment>{$message}</comment>");
         }
 
-        $result = $dryRun ? 'Would migrate' : 'Migrated';
-        $output->writeln("{$result} " . self::PUBLISHED_CONFIG_FILE . " from version {$migration->fromVersion} to {$migration->toVersion}.");
+        $result = $dryRun === true ? 'Would migrate' : 'Migrated';
+        $output->writeln("{$result} {$publishedFile} from version {$migration->fromVersion} to {$migration->toVersion}.");
 
         return self::SUCCESS;
     }

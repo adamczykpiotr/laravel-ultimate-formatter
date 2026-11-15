@@ -147,20 +147,25 @@ on every run, so a change takes effect without clearing its cache.
 
 ### Upgrading
 
-`config/ultimate-formatter.php` is yours once it is published, so a release that adds, removes or renames a key
-migrates it in place. `migrate-config` applies the changes since the `config-version` the file records,
-touches only the keys they name, keeps your values and comments, and prints what it changed. It runs after
-every `composer update` through the `post-update-cmd` script that `install` adds. Run it by hand with
-`--dry-run` to see the changes first:
+`config/ultimate-formatter.php` is yours once it is published, so each release that changes the default
+config ships the change as `config/diffs/{version}.diff`, and `migrate-config` replays the diffs newer than
+the `config-version` your file records. It matches each change by its lines and keys rather than by line
+number, keeps your values and comments, and prints what it changed. It runs after every `composer update`
+through the `post-update-cmd` script that `install` adds. Run it by hand with `--dry-run` to see the changes
+first:
 
 ```bash
 vendor/bin/ultimate-formatter migrate-config --dry-run
 ```
 
-A change your config already reflects is skipped, and a renamed key you already set keeps your value. A
-section it can't edit, such as one built with `array_merge()`, is reported and left to you, and the
-update still succeeds. The other published files call the package's factories and include its ruleset,
-so they pick up new defaults without a migration.
+A default you changed keeps your value. A change whose surrounding lines you edited is skipped and printed,
+so you can apply it by hand, and the update still succeeds. A diff can't tell a renamed key from a removed
+one, so when a key you set is removed, the command names your value for you to move over. The other
+published files call the package's factories and include its ruleset, so they pick up new defaults without
+a migration.
+
+The diffs are generated on release: semantic-release runs `.github/scripts/generate-config-diff.sh` with
+the version it is about to tag, and commits the diff and the bumped `config-version` with the release.
 
 ## Performance
 

@@ -302,15 +302,16 @@ class InstallCommand extends FormatterCommand
             $output->writeln("Added the {$names} composer scripts.");
         }
 
-        if ($addsMigrateConfig) {
-            $output->writeln('Added migrate-config to the post-update-cmd composer script, so ' . self::PUBLISHED_CONFIG_FILE . ' follows each upgrade.');
+        if ($addsMigrateConfig === true) {
+            $publishedFile = self::PUBLISHED_CONFIG_FILE;
+            $output->writeln("Added migrate-config to the post-update-cmd composer script, so {$publishedFile} follows each upgrade.");
         }
     }
 
     /**
      * @param stdClass $scripts
      *
-     * @return bool Whether it added the script.
+     * @return bool
      */
     protected function addMigrateConfigScript(stdClass $scripts): bool
     {

@@ -4,46 +4,77 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Tests\Unit;
 
-use AdamczykPiotr\UltimateFormatter\Config\ConfigChange;
 use AdamczykPiotr\UltimateFormatter\Config\ConfigMigrator;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
-use UnexpectedValueException;
+use Symfony\Component\Process\Process;
 
 class ConfigMigratorTest extends TestCase
 {
-    protected const DEFAULT_CONFIG_FILE = __DIR__ . '/../../config/ultimate-formatter.php';
-    protected const PUBLISHED_CONFIG = <<<'PHP'
+    protected const ROOT_DIRECTORY = __DIR__ . '/../..';
+    protected const GENERATOR_SCRIPT = self::ROOT_DIRECTORY . '/.github/scripts/generate-config-diff.sh';
+    protected const OLD_DEFAULT = <<<'PHP'
         <?php
 
         declare(strict_types=1);
 
         return [
+            'config-version' => '0.0.0',
+
             'format' => [
-                'rector' => ['process'], // runs first
+                'rector' => ['process', '--no-diffs'],
                 'php-cs-fixer' => ['fix'],
             ],
-            // The ruleset's flags.
+            'check' => [
+                'rector' => ['process', '--dry-run'],
+                'php-cs-fixer' => ['fix', '--dry-run'],
+                'phpstan' => ['analyse'],
+            ],
             'phpstan-rules' => [
                 /*
                 | Banned calls
                 */
 
-                'ultimateFormatter.disallowSprintf' => false,
-                'ultimateFormatter.disallowOld' => false, // turned off for the legacy module
+                'ultimateFormatter.disallowSprintf' => true,
+                'ultimateFormatter.disallowEnv' => true,
+                'ultimateFormatter.disallowOld' => true,
+            ],
+        ];
 
+        PHP;
+    protected const NEW_DEFAULT = <<<'PHP'
+        <?php
+
+        declare(strict_types=1);
+
+        return [
+            'config-version' => '0.0.0',
+
+            'format' => [
+                'rector' => ['process', '--no-diffs'],
+                'php-cs-fixer' => ['fix'],
+            ],
+            'check' => [
+                'rector' => ['process', '--dry-run'],
+                'php-cs-fixer' => ['fix', '--dry-run'],
+                'phpstan' => ['analyse', '--memory-limit=2G'],
+            ],
+            'phpstan-rules' => [
                 /*
-                | Architecture
+                | Banned calls
                 */
 
-                'ultimateFormatter.controllerSuffix' => true
+                'ultimateFormatter.disallowSprintf' => true,
+                'ultimateFormatter.disallowEnvCalls' => true,
+                'ultimateFormatter.disallowDd' => true,
             ],
         ];
 
         PHP;
 
-    protected string $configFile;
     protected Filesystem $filesystem;
+    protected string $packagePath;
+    protected string $configFile;
 
     /**
      * @return void
@@ -53,8 +84,15 @@ class ConfigMigratorTest extends TestCase
         parent::setUp();
 
         $this->filesystem = new Filesystem();
-        $this->configFile = sys_get_temp_dir() . '/' . uniqid('ultimate-formatter-migrate-', true) . '.php';
-        $this->filesystem->dumpFile($this->configFile, self::PUBLISHED_CONFIG);
+        $this->packagePath = $this->filesystem->tempnam(sys_get_temp_dir(), 'ultimate-formatter-package-');
+        $this->filesystem->remove($this->packagePath);
+        $this->filesystem->mkdir($this->packagePath);
+        $this->configFile = "{$this->packagePath}/published.php";
+
+        $this->filesystem->dumpFile("{$this->packagePath}/config/ultimate-formatter.php", self::OLD_DEFAULT);
+        $this->filesystem->dumpFile("{$this->packagePath}/config/diffs/.gitkeep", '');
+        $this->git('init', '--quiet');
+        $this->commit();
     }
 
     /**
@@ -62,7 +100,7 @@ class ConfigMigratorTest extends TestCase
      */
     protected function tearDown(): void
     {
-        $this->filesystem->remove($this->configFile);
+        $this->filesystem->remove($this->packagePath);
 
         parent::tearDown();
     }
@@ -72,78 +110,64 @@ class ConfigMigratorTest extends TestCase
      */
     public function test_default_config_is_on_the_latest_version(): void
     {
-        $config = require self::DEFAULT_CONFIG_FILE;
+        $config = require self::ROOT_DIRECTORY . '/config/ultimate-formatter.php';
 
         $this->assertIsArray($config);
-        $this->assertSame((new ConfigMigrator())->latestVersion(), $config[ConfigMigrator::VERSION_KEY]);
+        $this->assertSame((new ConfigMigrator())->latestVersion(), $config['config-version']);
     }
 
     /**
      * @return void
      */
-    public function test_migrations_are_numbered_from_one(): void
+    public function test_generator_skips_an_unchanged_config(): void
     {
-        $versions = array_keys(ConfigMigrator::migrations());
+        $output = $this->generateDiff();
 
-        $this->assertSame($versions === [] ? [] : range(1, count($versions)), $versions);
+        $this->assertStringContainsString('config/ultimate-formatter.php is unchanged', $output);
+        $this->assertSame('0.0.0', $this->migrator()->latestVersion());
     }
 
     /**
      * @return void
      */
-    public function test_edits_only_the_keys_a_migration_names(): void
+    public function test_generator_records_the_change_and_bumps_the_version(): void
     {
-        $migration = (new ConfigMigrator([
-            1 => [
-                ConfigChange::added(['phpstan-rules', 'ultimateFormatter.disallowDd'], true, after: 'ultimateFormatter.disallowOld'),
-                ConfigChange::removed(['format', 'rector']),
-            ],
-            2 => [
-                ConfigChange::renamed(['phpstan-rules', 'ultimateFormatter.disallowSprintf'], 'ultimateFormatter.disallowFormat'),
-                ConfigChange::added(['phpstan-rules', 'ultimateFormatter.serviceSuffix'], true),
-                ConfigChange::added(['format', 'pint'], ['--test', 'app']),
-            ],
-        ]))->migrate($this->configFile);
+        $this->releaseNewDefault();
 
-        $this->assertSame(<<<'PHP'
-            <?php
+        $this->assertSame('1.0.0', $this->migrator()->latestVersion());
+        $this->assertStringContainsString("'config-version' => '1.0.0',", $this->filesystem->readFile("{$this->packagePath}/config/ultimate-formatter.php"));
+        $this->assertStringNotContainsString('config-version', $this->filesystem->readFile("{$this->packagePath}/config/diffs/1.0.0.diff"));
+        $this->assertStringContainsString('is unchanged', $this->generateDiff('1.0.1'));
+    }
 
-            declare(strict_types=1);
+    /**
+     * @return void
+     */
+    public function test_orders_diffs_by_version(): void
+    {
+        $this->filesystem->dumpFile("{$this->packagePath}/config/diffs/1.9.0.diff", '');
+        $this->filesystem->dumpFile("{$this->packagePath}/config/diffs/1.10.0.diff", '');
 
-            return [
-                'format' => [
-                    'php-cs-fixer' => ['fix'],
-                    'pint' => ['--test', 'app'],
-                ],
-                // The ruleset's flags.
-                'phpstan-rules' => [
-                    /*
-                    | Banned calls
-                    */
+        $this->assertSame('1.10.0', $this->migrator()->latestVersion());
+    }
 
-                    'ultimateFormatter.disallowFormat' => false,
-                    'ultimateFormatter.disallowOld' => false, // turned off for the legacy module
-                    'ultimateFormatter.disallowDd' => true,
+    /**
+     * @return void
+     */
+    public function test_migrates_an_untouched_config_to_the_new_default(): void
+    {
+        $this->releaseNewDefault();
+        $this->filesystem->dumpFile($this->configFile, self::OLD_DEFAULT);
 
-                    /*
-                    | Architecture
-                    */
+        $migration = $this->migrator()->migrate($this->configFile);
 
-                    'ultimateFormatter.controllerSuffix' => true,
-                    'ultimateFormatter.serviceSuffix' => true,
-                ],
-                'config-version' => 2,
-            ];
-
-            PHP, $this->filesystem->readFile($this->configFile));
-        $this->assertSame(0, $migration->fromVersion);
-        $this->assertSame(2, $migration->toVersion);
+        $this->assertSame($this->filesystem->readFile("{$this->packagePath}/config/ultimate-formatter.php"), $this->filesystem->readFile($this->configFile));
         $this->assertSame([
-            'Added phpstan-rules.ultimateFormatter.disallowDd.',
-            'Removed format.rector.',
-            'Renamed phpstan-rules.ultimateFormatter.disallowSprintf to phpstan-rules.ultimateFormatter.disallowFormat.',
-            'Added phpstan-rules.ultimateFormatter.serviceSuffix.',
-            'Added format.pint.',
+            'Updated the default of phpstan.',
+            'Removed ultimateFormatter.disallowEnv.',
+            'Added ultimateFormatter.disallowEnvCalls.',
+            'Removed ultimateFormatter.disallowOld.',
+            'Added ultimateFormatter.disallowDd.',
         ], $migration->applied);
         $this->assertSame([], $migration->skipped);
     }
@@ -151,114 +175,55 @@ class ConfigMigratorTest extends TestCase
     /**
      * @return void
      */
-    public function test_runs_each_migration_once(): void
+    public function test_keeps_the_projects_values_and_comments(): void
     {
-        (new ConfigMigrator([1 => [ConfigChange::removed(['format', 'rector'])]]))->migrate($this->configFile);
-        $this->filesystem->dumpFile($this->configFile, str_replace("'php-cs-fixer'", "'rector' => ['process'],\n        'php-cs-fixer'", $this->filesystem->readFile($this->configFile)));
+        $this->releaseNewDefault();
+        $this->filesystem->dumpFile($this->configFile, str_replace(
+            ["'phpstan' => ['analyse'],", "'ultimateFormatter.disallowEnv' => true,", "'ultimateFormatter.disallowSprintf' => true,"],
+            ["'phpstan' => ['analyse', '--memory-limit=4G'],", "'ultimateFormatter.disallowEnv' => false, // legacy module", "// Turned off until the reports move to Str.\n        'ultimateFormatter.disallowSprintf' => false,"],
+            self::OLD_DEFAULT,
+        ));
 
-        $migration = (new ConfigMigrator([
-            1 => [ConfigChange::removed(['format', 'rector'])],
-            2 => [ConfigChange::removed(['format', 'php-cs-fixer'])],
-        ]))->migrate($this->configFile);
+        $migration = $this->migrator()->migrate($this->configFile);
 
-        $config = require $this->configFile;
-        $this->assertIsArray($config);
-        $this->assertSame(['rector' => ['process']], $config['format']);
-        $this->assertSame(2, $config['config-version']);
-        $this->assertSame(['Removed format.php-cs-fixer.'], $migration->applied);
-    }
-
-    /**
-     * @return void
-     */
-    public function test_leaves_an_up_to_date_config_alone(): void
-    {
-        $this->filesystem->dumpFile($this->configFile, "<?php\n\nreturn [\n    'config-version' => 1,\n];\n");
-
-        $migration = (new ConfigMigrator([1 => [ConfigChange::added(['format'], [])]]))->migrate($this->configFile);
-
-        $this->assertTrue($migration->isUpToDate());
-        $this->assertSame("<?php\n\nreturn [\n    'config-version' => 1,\n];\n", $this->filesystem->readFile($this->configFile));
-    }
-
-    /**
-     * @return void
-     */
-    public function test_skips_changes_the_project_already_made(): void
-    {
-        $migration = (new ConfigMigrator([1 => [
-            ConfigChange::added(['phpstan-rules', 'ultimateFormatter.disallowOld'], true),
-            ConfigChange::added(['pre', 'migrate'], true),
-            ConfigChange::removed(['check', 'phpstan']),
-            ConfigChange::renamed(['phpstan-rules', 'ultimateFormatter.missing'], 'ultimateFormatter.renamed'),
-        ]]))->migrate($this->configFile);
-
-        $this->assertSame([], $migration->applied);
+        $published = $this->filesystem->readFile($this->configFile);
+        $this->assertStringContainsString("'phpstan' => ['analyse', '--memory-limit=4G'],", $published);
+        $this->assertStringContainsString("// Turned off until the reports move to Str.\n        'ultimateFormatter.disallowSprintf' => false,", $published);
+        $this->assertStringContainsString("'ultimateFormatter.disallowEnvCalls' => true,\n        'ultimateFormatter.disallowDd' => true,\n    ],", $published);
+        $this->assertStringNotContainsString('disallowOld', $published);
+        $this->assertContains("Kept your value of phpstan, its default is now ['analyse', '--memory-limit=2G'].", $migration->applied);
+        $this->assertContains('Removed ultimateFormatter.disallowEnv, move your value false over if it still applies.', $migration->applied);
         $this->assertSame([], $migration->skipped);
-        $this->assertSame(
-            str_replace("    ],\n];", "    ],\n    'config-version' => 1,\n];", self::PUBLISHED_CONFIG),
-            $this->filesystem->readFile($this->configFile),
-        );
     }
 
     /**
      * @return void
      */
-    public function test_a_rename_keeps_the_new_key_the_project_already_set(): void
+    public function test_skips_a_change_whose_lines_were_removed(): void
     {
-        $migration = (new ConfigMigrator([1 => [
-            ConfigChange::renamed(['phpstan-rules', 'ultimateFormatter.disallowOld'], 'ultimateFormatter.disallowSprintf'),
-        ]]))->migrate($this->configFile);
+        $this->releaseNewDefault();
+        $this->filesystem->dumpFile($this->configFile, str_replace("        'ultimateFormatter.disallowOld' => true,\n", '', self::OLD_DEFAULT));
 
-        $config = require $this->configFile;
-        $this->assertIsArray($config);
-        $this->assertSame(['ultimateFormatter.disallowSprintf' => false, 'ultimateFormatter.controllerSuffix' => true], $config['phpstan-rules']);
-        $this->assertSame(['Removed phpstan-rules.ultimateFormatter.disallowOld, phpstan-rules.ultimateFormatter.disallowSprintf already exists.'], $migration->applied);
+        $migration = $this->migrator()->migrate($this->configFile);
+
+        $this->assertSame(['Updated the default of phpstan.'], $migration->applied);
+        $this->assertCount(1, $migration->skipped);
+        $this->assertStringStartsWith('Skipped a change from config/diffs/1.0.0.diff, the lines around it were edited:', $migration->skipped[0]);
+        $this->assertStringContainsString("-        'ultimateFormatter.disallowEnv' => true,", $migration->skipped[0]);
+        $this->assertStringContainsString("'config-version' => '1.0.0',", $this->filesystem->readFile($this->configFile));
     }
 
     /**
      * @return void
      */
-    public function test_warns_and_skips_a_hand_edited_section(): void
+    public function test_adds_the_version_to_a_config_published_before_it(): void
     {
-        $this->filesystem->dumpFile($this->configFile, <<<'PHP'
-            <?php
+        $this->releaseNewDefault();
+        $this->filesystem->dumpFile($this->configFile, str_replace("    'config-version' => '0.0.0',\n\n", '', self::OLD_DEFAULT));
 
-            return [
-                'phpstan-rules' => array_merge(require __DIR__ . '/shared-rules.php', [
-                    'ultimateFormatter.disallowSprintf' => false,
-                ]),
-                'format' => [
-                    'rector' => ['process'],
-                ],
-            ];
+        $this->migrator()->migrate($this->configFile);
 
-            PHP);
-
-        $migration = (new ConfigMigrator([1 => [
-            ConfigChange::removed(['phpstan-rules', 'ultimateFormatter.disallowSprintf']),
-            ConfigChange::removed(['format', 'rector']),
-        ]]))->migrate($this->configFile);
-
-        $this->assertSame(['Removed format.rector.'], $migration->applied);
-        $this->assertSame(['Skipped removing phpstan-rules.ultimateFormatter.disallowSprintf, phpstan-rules is not a literal [...] array.'], $migration->skipped);
-        $this->assertStringContainsString("'ultimateFormatter.disallowSprintf' => false,", $this->filesystem->readFile($this->configFile));
-        $this->assertStringContainsString("'format' => [\n    ],\n    'config-version' => 1,", $this->filesystem->readFile($this->configFile));
-    }
-
-    /**
-     * @return void
-     */
-    public function test_adds_to_an_empty_array(): void
-    {
-        $this->filesystem->dumpFile($this->configFile, "<?php\n\nreturn [\n    'pre' => [],\n];\n");
-
-        (new ConfigMigrator([1 => [ConfigChange::added(['pre', 'migrate'], false)]]))->migrate($this->configFile);
-
-        $this->assertSame(
-            "<?php\n\nreturn [\n    'pre' => [\n        'migrate' => false,\n    ],\n    'config-version' => 1,\n];\n",
-            $this->filesystem->readFile($this->configFile),
-        );
+        $this->assertSame($this->filesystem->readFile("{$this->packagePath}/config/ultimate-formatter.php"), $this->filesystem->readFile($this->configFile));
     }
 
     /**
@@ -266,22 +231,78 @@ class ConfigMigratorTest extends TestCase
      */
     public function test_dry_run_leaves_the_file_alone(): void
     {
-        $migration = (new ConfigMigrator([1 => [ConfigChange::removed(['format', 'rector'])]]))->migrate($this->configFile, dryRun: true);
+        $this->releaseNewDefault();
+        $this->filesystem->dumpFile($this->configFile, self::OLD_DEFAULT);
 
-        $this->assertSame(['Removed format.rector.'], $migration->applied);
-        $this->assertSame(self::PUBLISHED_CONFIG, $this->filesystem->readFile($this->configFile));
+        $migration = $this->migrator()->migrate($this->configFile, dryRun: true);
+
+        $this->assertSame('1.0.0', $migration->toVersion);
+        $this->assertSame(self::OLD_DEFAULT, $this->filesystem->readFile($this->configFile));
     }
 
     /**
      * @return void
      */
-    public function test_fails_on_a_config_that_does_not_return_an_array(): void
+    public function test_leaves_an_up_to_date_config_alone(): void
     {
-        $this->filesystem->dumpFile($this->configFile, "<?php\n\nreturn require __DIR__ . '/shared.php';\n");
+        $this->releaseNewDefault();
+        $published = str_replace("'config-version' => '0.0.0',", "'config-version' => '1.0.0',", self::OLD_DEFAULT);
+        $this->filesystem->dumpFile($this->configFile, $published);
 
-        $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage('it does not return a literal [...] array');
+        $migration = $this->migrator()->migrate($this->configFile);
 
-        (new ConfigMigrator([1 => []]))->migrate($this->configFile);
+        $this->assertTrue($migration->isUpToDate());
+        $this->assertSame($published, $this->filesystem->readFile($this->configFile));
+    }
+
+    /**
+     * @return ConfigMigrator
+     */
+    protected function migrator(): ConfigMigrator
+    {
+        return new ConfigMigrator("{$this->packagePath}/config/diffs");
+    }
+
+    /**
+     * @return void
+     */
+    protected function releaseNewDefault(): void
+    {
+        $this->filesystem->dumpFile("{$this->packagePath}/config/ultimate-formatter.php", self::NEW_DEFAULT);
+        $this->commit();
+        $this->generateDiff('1.0.0');
+        $this->commit();
+    }
+
+    /**
+     * @param string $version
+     *
+     * @return string
+     */
+    protected function generateDiff(string $version = '1.0.0'): string
+    {
+        $process = new Process([self::GENERATOR_SCRIPT, $version], $this->packagePath);
+        $process->mustRun();
+
+        return $process->getOutput();
+    }
+
+    /**
+     * @return void
+     */
+    protected function commit(): void
+    {
+        $this->git('add', '--all');
+        $this->git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '--quiet', '--allow-empty', '--message=change');
+    }
+
+    /**
+     * @param string ...$arguments
+     *
+     * @return void
+     */
+    protected function git(string ...$arguments): void
+    {
+        (new Process(['git', ...$arguments], $this->packagePath))->mustRun();
     }
 }

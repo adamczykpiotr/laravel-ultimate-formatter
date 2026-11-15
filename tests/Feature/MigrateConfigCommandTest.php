@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Tests\Feature;
 
-use AdamczykPiotr\UltimateFormatter\Config\ConfigChange;
 use AdamczykPiotr\UltimateFormatter\Config\ConfigMigrator;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\MigrateConfigCommand;
 use AdamczykPiotr\UltimateFormatter\Tests\TestCase;
@@ -15,6 +14,7 @@ use Symfony\Component\Filesystem\Filesystem;
 class MigrateConfigCommandTest extends TestCase
 {
     protected const CONFIG = "<?php\n\nreturn [\n    'format' => [\n        'rector' => ['process'],\n    ],\n];\n";
+    protected const DIFF = "--- a/config/ultimate-formatter.php\n+++ b/config/ultimate-formatter.php\n@@ -2,3 +2,2 @@\n     'format' => [\n-        'rector' => ['process'],\n     ],\n";
 
     protected string $projectPath;
     protected Filesystem $filesystem;
@@ -53,7 +53,7 @@ class MigrateConfigCommandTest extends TestCase
 
         $this->assertSame(Command::SUCCESS, $tester->getStatusCode());
         $this->assertSame(
-            "Removed format.rector.\nMigrated config/ultimate-formatter.php from version 0 to 1.\n",
+            "Removed rector.\nMigrated config/ultimate-formatter.php from version 0.0.0 to 1.0.0.\n",
             $tester->getDisplay(),
         );
         $this->assertStringNotContainsString("'rector'", $this->filesystem->readFile("{$this->projectPath}/config/ultimate-formatter.php"));
@@ -68,7 +68,7 @@ class MigrateConfigCommandTest extends TestCase
 
         $tester = $this->runMigrateConfig(['--dry-run' => true]);
 
-        $this->assertStringContainsString('Would migrate config/ultimate-formatter.php from version 0 to 1.', $tester->getDisplay());
+        $this->assertStringContainsString('Would migrate config/ultimate-formatter.php from version 0.0.0 to 1.0.0.', $tester->getDisplay());
         $this->assertSame(self::CONFIG, $this->filesystem->readFile("{$this->projectPath}/config/ultimate-formatter.php"));
     }
 
@@ -94,7 +94,7 @@ class MigrateConfigCommandTest extends TestCase
 
         $this->assertSame(Command::SUCCESS, $tester->getStatusCode());
         $this->assertStringContainsString(
-            "Skipped the config migration, config/ultimate-formatter.php can't be edited: it does not return a literal [...] array.",
+            "Skipped the config migration, config/ultimate-formatter.php can't be edited: it does not return a [...] array.",
             $tester->getDisplay(),
         );
     }
@@ -120,7 +120,8 @@ class MigrateConfigCommandTest extends TestCase
      */
     protected function runMigrateConfig(array $options = []): CommandTester
     {
-        $migrator = new ConfigMigrator([1 => [ConfigChange::removed(['format', 'rector'])]]);
+        $this->filesystem->dumpFile("{$this->projectPath}/diffs/1.0.0.diff", self::DIFF);
+        $migrator = new ConfigMigrator("{$this->projectPath}/diffs");
         $tester = new CommandTester(new MigrateConfigCommand($migrator));
         $tester->execute(['--path' => $this->projectPath, ...$options]);
 
