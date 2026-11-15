@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.7](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.6...v1.13.7) (2026-11-15)
+
+
+### Bug Fixes
+
+* **rector:** add param types from [@param](https://github.com/param) tags and return types to relation methods ([#20](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/20)) ([#50](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/50)) ([600f25e](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/600f25e26636f26e43d0f3614423cebf2bba9ecd))
+
 ## [1.13.6](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.5...v1.13.6) (2026-11-15)
 
 
