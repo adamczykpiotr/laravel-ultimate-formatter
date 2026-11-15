@@ -19,7 +19,7 @@ It writes `.php-cs-fixer.php`, `rector.php`, `phpstan.neon` and `.git-blame-igno
 and `config/ide-helper.php`. The ide-helper config holds only the settings that differ from
 [laravel-ide-helper](https://github.com/barryvdh/laravel-ide-helper)'s defaults (no `where{Column}()` magic methods),
 since ide-helper merges its own defaults under it. Add your ignored models and model hooks there.
-Existing files are skipped unless you pass `--force`. `.git-blame-ignore-revs` is never overwritten, since it holds your recorded commits. Rector skips `database/migrations`.
+Existing files are skipped unless you pass `--force`. `.git-blame-ignore-revs` is never overwritten, since it holds your recorded commits.
 
 Record bulk formatting commits in `.git-blame-ignore-revs` so blame skips them, and point
 `blame.ignoreRevsFile` at that file in your local git config.

@@ -22,7 +22,8 @@ Supports Laravel 12–13 on PHP 8.3+.
 `rector.php`, `phpstan.neon` and `.git-blame-ignore-revs`, plus `config/ultimate-formatter.php` in an
 application. Existing files are skipped unless you pass `--force`, and `--ci` adds a GitHub Actions
 workflow. See [Setup](docs/setup.md) for the paths it picks and how to add the ruleset to an existing
-PHPStan config.
+PHPStan config, and [Adopting it in an existing project](docs/adopting.md) for the first run on a
+large codebase.
 
 ## Usage
 
@@ -40,9 +41,13 @@ Pass `--without-phpstan-ruleset` to run PHPStan without it.
 same commands are available as `php artisan formatter:install`, `formatter:format` and
 `formatter:check`.
 
-Pass `-q` to silence every step, so only the exit code reports the result. Pass `-v`, `-vv` or `-vvv` to
-print each command before it runs and hand the same level to it. Both replace any `--quiet` or `-v` in the
-configured arguments. Rector has no such flags, so it gets `--debug` at `-vvv` and nothing otherwise.
+| Flag | Effect |
+|---|---|
+| `-q` | Silences every step, so only the exit code reports the result |
+| `-v`, `-vv` | Prints each command before it runs and passes the same level to each step |
+| `-vvv` | As above, and passes `--debug` to Rector, which has no other verbosity flags |
+
+These flags replace any `--quiet` or `-v` in the [configured arguments](docs/configuration.md#tool-arguments).
 
 ## What it enforces
 
@@ -54,21 +59,19 @@ configured arguments. Rector has no such flags, so it gets `--debug` at `-vvv` a
 ## Documentation
 
 - [Setup](docs/setup.md): layout detection, published files, PHPStan and Larastan, CI
+- [Adopting it in an existing project](docs/adopting.md): the first format, blame, and getting PHPStan to pass
 - [Configuration](docs/configuration.md): tool arguments, formatter rules, pre steps, ruleset flags, performance
 - [Upgrading](docs/upgrading.md): how `migrate-config` keeps your published config current
 - [Formatting rules](docs/rules.md): everything `format` rewrites
 - [PHPStan ruleset](docs/phpstan-ruleset.md): every rule the ruleset reports, with its identifier
 
-## Testing
-
-```bash
-composer test
-composer analyse
-```
-
 ## Changelog
 
-Releases are tagged automatically by semantic-release from the conventional commit titles merged into `main`. See [CHANGELOG](CHANGELOG.md) for what changed.
+See [CHANGELOG](CHANGELOG.md) for what changed in each release.
+
+## Contributing
+
+See [CONTRIBUTING](CONTRIBUTING.md) for running the tests and how releases work.
 
 ## License
 

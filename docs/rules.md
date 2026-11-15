@@ -13,7 +13,7 @@ trait statements; a statement with a `{ ... }` conflict resolution block or a co
 ## Rector
 
 Type declarations, docblock types, and the Laravel quality, collection and type sets matched to the
-installed Laravel version. Also:
+installed Laravel version. Rector skips `database/migrations`. Also:
 
 - constructor property promotion;
 - `switch` to `match`. A `switch` without a `default` becomes a `match` without one, so add the arm

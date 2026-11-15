@@ -16,7 +16,10 @@ return [
 
 ## Formatter rules
 
-The generated files are yours to edit. Rules are merged in, not replaced:
+The generated files are yours to edit. Rules are merged in, not replaced. The second argument of
+`FixerConfigFactory::create()` is PHP CS Fixer's cache file. `install` puts it in
+`storage/framework/cache` in an application and in `build/` in a package, so it stays out of the project
+root.
 
 ```php
 // .php-cs-fixer.php
