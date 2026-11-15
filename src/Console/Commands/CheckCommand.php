@@ -81,7 +81,13 @@ class CheckCommand extends FormatterCommand
      */
     protected function loadsRuleset(string $phpstanConfigFile, InputInterface $input, OutputInterface $output): bool
     {
-        $process = new Process([PHP_BINARY, self::PHPSTAN_SCRIPT, 'dump-parameters', '--json'], $this->projectPath($input), timeout: null);
+        // Symfony Console exports -q as SHELL_VERBOSITY, which would leave PHPStan's parameters unprinted.
+        $process = new Process(
+            [PHP_BINARY, self::PHPSTAN_SCRIPT, 'dump-parameters', '--json'],
+            $this->projectPath($input),
+            ['SHELL_VERBOSITY' => false],
+            timeout: null,
+        );
         $process->run();
         if ($process->isSuccessful() === false) {
             $output->writeln("<error>PHPStan could not load {$phpstanConfigFile}:</error>");
