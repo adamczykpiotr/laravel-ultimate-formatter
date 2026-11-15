@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Console\Commands;
 
 use AdamczykPiotr\UltimateFormatter\Config\ConfigReader;
+use AdamczykPiotr\UltimateFormatter\Console\ProjectLayout;
 use AdamczykPiotr\UltimateFormatter\Console\Tool;
 use AdamczykPiotr\UltimateFormatter\Console\ToolRunner;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -52,6 +53,13 @@ class FormatCommand extends FormatterCommand
         ];
 
         $enabledSteps = collect($artisanSteps)->filter()->keys();
+
+        // A package has no artisan to run them with, so Rector and the fixer still run without them.
+        if ($enabledSteps->isNotEmpty() && ProjectLayout::detect($path) !== ProjectLayout::APP) {
+            $output->writeln("<comment>Skipped {$enabledSteps->implode(', ')}, the project has no artisan.</comment>");
+            $enabledSteps = $enabledSteps->take(0);
+        }
+
         foreach ($enabledSteps as $step) {
             $artisanExitCode = $this->toolRunner->run(Tool::ARTISAN, $this->configReader->arguments($path, 'format', $step), $path, $output);
             if ($artisanExitCode !== self::SUCCESS) {

@@ -21,6 +21,13 @@ class NumericLiteralSeparatorFixer implements FixerInterface
     protected const GROUP_SIZE = 3;
 
     /**
+     * The innermost opening bracket around each `,` and closing bracket, for the file being fixed.
+     *
+     * @var array<int, int>
+     */
+    protected array $openers = [];
+
+    /**
      * @param Tokens<Token> $tokens
      *
      * @return bool
@@ -46,14 +53,17 @@ class NumericLiteralSeparatorFixer implements FixerInterface
      */
     public function fix(SplFileInfo $file, Tokens $tokens): void
     {
+        $this->openers = $this->openers($tokens);
+
         foreach ($tokens as $index => $token) {
-            if ($token->isGivenKind([T_LNUMBER, T_DNUMBER]) === false || $this->isCode($tokens, $index)) {
+            if ($token->isGivenKind([T_LNUMBER, T_DNUMBER]) === false) {
                 continue;
             }
 
+            // Looking for the name is the slow part, so a literal that stays the same skips it.
             $literal = $token->getContent();
             $separated = $this->separate($literal);
-            if ($separated !== $literal) {
+            if ($separated !== $literal && $this->isCode($tokens, $index) === false) {
                 $tokens[$index] = new Token([$token->getId(), $separated]);
             }
         }
@@ -122,39 +132,35 @@ class NumericLiteralSeparatorFixer implements FixerInterface
      */
     protected function targetNames(Tokens $tokens, int $index): array
     {
+        $names = [];
+
         // Step out of array literals, so `precinctIds: [5757, 10001]` still finds `precinctIds`.
-        $boundary = $this->expressionBoundary($tokens, $index);
+        $boundary = $this->expressionBoundary($tokens, $index, $names);
         while ($boundary !== null && $tokens[$boundary]->equalsAny([',', [CT::T_ARRAY_BRACKET_OPEN]])) {
             $arrayStart = $this->arrayStart($tokens, $boundary);
             if ($arrayStart === null) {
-                return [];
+                return $names;
             }
 
-            $boundary = $this->expressionBoundary($tokens, $arrayStart);
+            $boundary = $this->expressionBoundary($tokens, $arrayStart, $names);
         }
 
         if ($boundary === null || $tokens[$boundary]->equalsAny(['=', [T_DOUBLE_ARROW], [CT::T_NAMED_ARGUMENT_COLON]]) === false) {
-            return [];
+            return $names;
         }
 
-        $target = $tokens->getPrevMeaningfulToken($boundary);
-
-        // `$row['parent_id'] = 10001` is named by its key.
-        if ($target !== null && $tokens[$target]->equals(']')) {
-            $target = $tokens->getPrevMeaningfulToken($target);
+        $target = $this->nameToken($tokens, $tokens->getPrevMeaningfulToken($boundary));
+        if ($target === null) {
+            return $names;
         }
 
-        if ($target === null || $tokens[$target]->isGivenKind([T_VARIABLE, T_STRING, T_CONSTANT_ENCAPSED_STRING, CT::T_NAMED_ARGUMENT_NAME]) === false) {
-            return [];
-        }
-
-        $names = [Str::trim($tokens[$target]->getContent(), '$\'"')];
+        $names[] = $this->name($tokens[$target]);
 
         // Enum cases are named after the code (`FIRST_CENSUS = 1921`), so the enum's name counts too.
         $case = $tokens->getPrevMeaningfulToken($target);
-        $enum = $tokens->getPrevTokenOfKind($target, [[T_ENUM]]);
-        if ($case !== null && $tokens[$case]->isGivenKind(T_CASE) && $enum !== null) {
-            $enumName = $tokens->getNextMeaningfulToken($enum);
+        if ($case !== null && $tokens[$case]->isGivenKind(T_CASE)) {
+            $enum = $tokens->getPrevTokenOfKind($target, [[T_ENUM]]);
+            $enumName = $enum === null ? null : $tokens->getNextMeaningfulToken($enum);
             $names[] = $enumName === null ? '' : $tokens[$enumName]->getContent();
         }
 
@@ -162,21 +168,80 @@ class NumericLiteralSeparatorFixer implements FixerInterface
     }
 
     /**
-     * The token before the expression that holds `$index`, skipping arithmetic so `year: 2000 + $index` finds `:`.
+     * The token that names the value ending at `$index`: `$userId`, the key of `$row['parent_id']`, or `$userIds` in `$userIds[]`.
      *
      * @param Tokens<Token> $tokens
-     * @param int $index
+     * @param int|null $index
      *
      * @return int|null
      */
-    protected function expressionBoundary(Tokens $tokens, int $index): ?int
+    protected function nameToken(Tokens $tokens, ?int $index): ?int
+    {
+        if ($index !== null && $tokens[$index]->equals(']')) {
+            $index = $tokens->getPrevMeaningfulToken($index);
+        }
+
+        if ($index !== null && $tokens[$index]->equals('[')) {
+            $index = $tokens->getPrevMeaningfulToken($index);
+        }
+
+        if ($index === null || $tokens[$index]->isGivenKind([T_VARIABLE, T_STRING, T_CONSTANT_ENCAPSED_STRING, CT::T_NAMED_ARGUMENT_NAME]) === false) {
+            return null;
+        }
+
+        return $index;
+    }
+
+    /**
+     * @param Token $token
+     *
+     * @return string
+     */
+    protected function name(Token $token): string
+    {
+        return Str::trim($token->getContent(), '$\'"');
+    }
+
+    /**
+     * The token before the expression that holds `$index`, skipping arithmetic so `year: 2000 + $index` finds `:`.
+     * A `??` names its fallback after the value it stands in for, so `$row['userId'] ?? 10001` adds `userId` to `$names`.
+     *
+     * @param Tokens<Token> $tokens
+     * @param int $index
+     * @param list<string> $names
+     *
+     * @return int|null
+     */
+    protected function expressionBoundary(Tokens $tokens, int $index, array &$names): ?int
     {
         $boundary = $tokens->getPrevMeaningfulToken($index);
-        while ($boundary !== null && $this->continuesExpression($tokens[$boundary])) {
+        while ($boundary !== null) {
+            $token = $tokens[$boundary];
+            if ($token->isGivenKind(T_COALESCE)) {
+                $boundary = $tokens->getPrevMeaningfulToken($boundary);
+                $operand = $this->nameToken($tokens, $boundary);
+                if ($operand !== null) {
+                    $names[] = $this->name($tokens[$operand]);
+                }
+
+                continue;
+            }
+
+            // Step over an index such as `['userId']`, to the variable it reads from.
+            if ($token->equals(']') && isset($this->openers[$boundary])) {
+                $boundary = $tokens->getPrevMeaningfulToken($this->openers[$boundary]);
+
+                continue;
+            }
+
+            if ($this->continuesExpression($token) === false) {
+                return $boundary;
+            }
+
             $boundary = $tokens->getPrevMeaningfulToken($boundary);
         }
 
-        return $boundary;
+        return null;
     }
 
     /**
@@ -189,21 +254,35 @@ class NumericLiteralSeparatorFixer implements FixerInterface
      */
     protected function arrayStart(Tokens $tokens, int $index): ?int
     {
-        $depth = 0;
-        for ($cursor = $index; $cursor >= 0; --$cursor) {
-            $token = $tokens[$cursor];
-            if ($token->equalsAny([')', ']', '}', [CT::T_ARRAY_BRACKET_CLOSE]])) {
-                ++$depth;
-            } elseif ($token->equalsAny(['(', '[', '{', [CT::T_ARRAY_BRACKET_OPEN]])) {
-                if ($depth === 0) {
-                    return $token->isGivenKind(CT::T_ARRAY_BRACKET_OPEN) ? $cursor : null;
-                }
+        $opener = $tokens[$index]->isGivenKind(CT::T_ARRAY_BRACKET_OPEN) ? $index : $this->openers[$index] ?? null;
 
-                --$depth;
+        return $opener !== null && $tokens[$opener]->isGivenKind(CT::T_ARRAY_BRACKET_OPEN) ? $opener : null;
+    }
+
+    /**
+     * Built in one pass, so a long array doesn't walk back to its opening `[` once per element.
+     *
+     * @param Tokens<Token> $tokens
+     *
+     * @return array<int, int>
+     */
+    protected function openers(Tokens $tokens): array
+    {
+        $openers = [];
+        /** @var Collection<int, int> $stack */
+        $stack = collect();
+        foreach ($tokens as $index => $token) {
+            if ($token->equalsAny(['(', '[', '{', [CT::T_ARRAY_BRACKET_OPEN]])) {
+                $stack->push($index);
+            } elseif ($token->equalsAny([',', ')', ']', '}', [CT::T_ARRAY_BRACKET_CLOSE]])) {
+                $opener = $token->equals(',') ? $stack->last() : $stack->pop();
+                if ($opener !== null) {
+                    $openers[$index] = $opener;
+                }
             }
         }
 
-        return null;
+        return $openers;
     }
 
     /**
@@ -213,8 +292,9 @@ class NumericLiteralSeparatorFixer implements FixerInterface
      */
     protected function continuesExpression(Token $token): bool
     {
+        // The ternary's `?` and `:` too, so `$userId = $flag ? 10001 : 0` finds `$userId`.
         return $token->isGivenKind([T_LNUMBER, T_DNUMBER, T_VARIABLE])
-            || $token->equalsAny(['+', '-', '*', '/', '%']);
+            || $token->equalsAny(['+', '-', '*', '/', '%', '?', ':']);
     }
 
     /**

@@ -14,7 +14,9 @@ use Symfony\Component\Process\Process;
 class PhpStanSetup
 {
     public const RULES_FILE = 'vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon';
-    protected const CONFIG_FILES = ['phpstan.neon', 'phpstan.neon.dist', 'phpstan.dist.neon'];
+
+    // PHPStan's own discovery order, dot-prefixed names included.
+    protected const CONFIG_FILES = ['.phpstan.neon', 'phpstan.neon', '.phpstan.neon.dist', 'phpstan.neon.dist', '.phpstan.dist.neon', 'phpstan.dist.neon'];
     protected const EXTENSION_INSTALLER_PACKAGE = 'phpstan/extension-installer';
     protected const EXTENSION_FILES = [
         'vendor/larastan/larastan/extension.neon',

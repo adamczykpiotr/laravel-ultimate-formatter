@@ -28,7 +28,7 @@ class PreStepsTest extends TestCase
         $this->filesystem = new Filesystem();
         $this->projectPath = $this->filesystem->tempnam(sys_get_temp_dir(), 'ultimate-formatter-');
         $this->filesystem->remove($this->projectPath);
-        $this->filesystem->mkdir($this->projectPath);
+        $this->filesystem->mkdir("{$this->projectPath}/app");
 
         $this->filesystem->dumpFile("{$this->projectPath}/artisan", <<<'PHP'
             <?php
@@ -167,6 +167,23 @@ class PreStepsTest extends TestCase
 
         $this->assertSame("process --debug\n", $this->filesystem->readFile("{$this->projectPath}/rector.log"));
         $this->assertStringContainsString('> php vendor/bin/rector process --debug', $tester->getDisplay());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_skips_the_artisan_steps_in_a_package(): void
+    {
+        $this->filesystem->remove(["{$this->projectPath}/app", "{$this->projectPath}/artisan"]);
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->publishConfig("['pre' => ['migrate' => true]]");
+
+        $tester = new CommandTester(new FormatCommand());
+        $tester->execute(['--path' => $this->projectPath, '--models' => true]);
+
+        $this->assertFileDoesNotExist("{$this->projectPath}/artisan.log");
+        $this->assertStringContainsString('Skipped migrate, ide-helper, the project has no artisan.', $tester->getDisplay());
+        $this->assertSame("process --no-progress-bar --no-diffs\n", $this->filesystem->readFile("{$this->projectPath}/rector.log"));
     }
 
     /**

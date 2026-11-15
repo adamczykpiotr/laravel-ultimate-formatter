@@ -88,6 +88,10 @@ class NumericLiteralSeparatorFixerTest extends TestCase
         yield 'parameter default with year' => ['function report(int $year = 2026) {}'];
         yield 'property ending with id' => ['$this->parentId = 10001;'];
         yield 'case of a year enum' => ['enum CensusYear: int { case FIRST = 1921; }'];
+        yield 'ternary assigned to an id' => ['$userId = $flag ? 10001 : 0;'];
+        yield 'coalesce assigned to an id' => ['$userId = $other ?? 10001;'];
+        yield 'appended to a list of ids' => ['$userIds[] = 10001;'];
+        yield 'fallback for an id key' => ["\$x = \$y['userId'] ?? 10001;"];
     }
 
     /**
@@ -120,6 +124,8 @@ class NumericLiteralSeparatorFixerTest extends TestCase
         yield 'positional argument' => ['ST::transform($point, 4326);', 'ST::transform($point, 4_326);'];
         yield 'list passed positionally' => ['foo([1000, 2000]);', 'foo([1_000, 2_000]);'];
         yield 'call inside an id argument' => ['new Job(taskId: max(1000, $x));', 'new Job(taskId: max(1_000, $x));'];
+        yield 'ternary on an id' => ['$count = $userId ? 10000 : 0;', '$count = $userId ? 10_000 : 0;'];
+        yield 'index on an id key' => ["\$count = \$counts['userId'] + 10000;", "\$count = \$counts['userId'] + 10_000;"];
         yield 'enum unrelated to codes' => ['enum Limit: int { case MAX = 10000; }', 'enum Limit: int { case MAX = 10_000; }'];
     }
 }

@@ -192,6 +192,53 @@ class CheckCommandTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function test_runs_phpstan_with_a_dot_named_config(): void
+    {
+        $this->filesystem->touch("{$this->projectPath}/.phpstan.neon");
+
+        $exitCode = $this->runCheck();
+
+        $this->assertSame(Command::SUCCESS, $exitCode);
+        $this->assertSame("rector\nphp-cs-fixer\nphpstan\n", $this->filesystem->readFile("{$this->projectPath}/tools.log"));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_names_the_config_phpstan_reads_first(): void
+    {
+        $this->filesystem->touch(["{$this->projectPath}/.phpstan.neon", "{$this->projectPath}/phpstan.neon"]);
+        $this->filesystem->dumpFile("{$this->projectPath}/phpstan-parameters.json", '{"level": 10}');
+
+        $tester = $this->checkTester();
+
+        $this->assertSame(Command::FAILURE, $tester->getStatusCode());
+        $this->assertStringContainsString(".phpstan.neon doesn't load the formatter's PHPStan ruleset", $tester->getDisplay());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_writes_the_tools_errors_to_stderr(): void
+    {
+        $this->filesystem->dumpFile("{$this->projectPath}/vendor/bin/rector", <<<'PHP'
+            <?php
+            echo "rector report\n";
+            fwrite(STDERR, "rector crashed\n");
+            exit(1);
+            PHP);
+
+        $tester = new CommandTester(new CheckCommand());
+        $tester->execute(['--path' => $this->projectPath], ['capture_stderr_separately' => true]);
+
+        $this->assertSame(Command::FAILURE, $tester->getStatusCode());
+        $this->assertSame("rector report\n", $tester->getDisplay());
+        $this->assertSame("rector crashed\n", $tester->getErrorOutput());
+    }
+
+    /**
      * @return int
      */
     protected function runCheck(): int

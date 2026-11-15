@@ -11,6 +11,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 
 // Composer's post-update-cmd runs it, so it stays out of the command lists.
 #[AsCommand(name: 'formatter:migrate-config', description: 'Bring the published config/ultimate-formatter.php up to date with the package', hidden: true)]
@@ -57,9 +58,10 @@ class MigrateConfigCommand extends FormatterCommand
 
         try {
             $migration = $this->migrator->migrate($configFile, $dryRun);
-        } catch (ConfigNotMigratableException $exception) {
-            // It runs from composer's post-update-cmd, so a config it can't migrate must not fail the update.
-            $output->writeln("<comment>Skipped the config migration, {$publishedFile} can't be edited: {$exception->getMessage()}.</comment>");
+        } catch (ConfigNotMigratableException|IOExceptionInterface $exception) {
+            // It runs after composer install and update, so a config it can't read, parse or write must not fail them.
+            $reason = rtrim($exception->getMessage(), '.');
+            $output->writeln("<comment>Skipped the config migration, {$publishedFile} can't be edited: {$reason}.</comment>");
 
             return self::SUCCESS;
         }
@@ -79,7 +81,10 @@ class MigrateConfigCommand extends FormatterCommand
         }
 
         $result = $dryRun === true ? 'Would migrate' : 'Migrated';
-        $output->writeln("{$result} {$publishedFile} from version {$migration->fromVersion} to {$migration->toVersion}.");
+        $versions = $migration->fromVersion === $migration->toVersion
+            ? "to version {$migration->toVersion}"
+            : "from version {$migration->fromVersion} to {$migration->toVersion}";
+        $output->writeln("{$result} {$publishedFile} {$versions}.");
 
         return self::SUCCESS;
     }
