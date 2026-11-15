@@ -59,7 +59,7 @@
         "post-autoload-dump": "@composer run prepare",
         "prepare": "@php vendor/bin/testbench package:discover --ansi",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=2G",
-        "check": "@php bin/ultimate-formatter check",
+        "check": "@php bin/ultimate-formatter check --without-phpstan-ruleset",
         "format": "@php bin/ultimate-formatter format",
         "test": "vendor/bin/phpunit",
         "test-coverage": "vendor/bin/phpunit --coverage-html build/coverage"

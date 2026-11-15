@@ -12,7 +12,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
-use UnexpectedValueException;
 
 #[AsCommand(name: 'formatter:install', description: 'Publish the formatter configs into the project')]
 class InstallCommand extends FormatterCommand
@@ -23,12 +22,6 @@ class InstallCommand extends FormatterCommand
     protected const CI_WORKFLOW_FILE = '.github/workflows/code-style.yml';
     protected const PHPSTAN_CONFIG_FILE = 'phpstan.neon';
     protected const IDE_HELPER_CONFIG_FILE = 'config/ide-helper.php';
-    protected const PHPSTAN_RULES_FILE = 'vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon';
-    protected const PHPSTAN_EXTENSION_FILES = [
-        'vendor/larastan/larastan/extension.neon',
-        'vendor/spaze/phpstan-disallowed-calls/extension.neon',
-        'vendor/phpat/phpat/extension.neon',
-    ];
     protected const COMPOSER_SCRIPTS = [
         'check' => 'vendor/bin/ultimate-formatter check',
         'format' => 'vendor/bin/ultimate-formatter format',
@@ -171,20 +164,13 @@ class InstallCommand extends FormatterCommand
     }
 
     /**
-     * extension-installer already loads the extensions the ruleset configures, and PHPStan fails when one is included twice.
-     *
      * @param string $path
      *
      * @return string
      */
     protected function renderPhpstanIncludes(string $path): string
     {
-        $composer = $this->readComposerFile("{$path}/composer.json");
-        $usesExtensionInstaller = data_get($composer, 'require.phpstan/extension-installer') !== null
-            || data_get($composer, 'require-dev.phpstan/extension-installer') !== null;
-        $extensionFiles = $usesExtensionInstaller ? [] : self::PHPSTAN_EXTENSION_FILES;
-
-        return collect([...$extensionFiles, self::PHPSTAN_RULES_FILE])
+        return collect($this->phpstanIncludes($path))
             ->map(fn(string $file): string => "    - {$file}")
             ->implode("\n");
     }
@@ -325,26 +311,6 @@ class InstallCommand extends FormatterCommand
         $scripts->{'post-update-cmd'} = [...$commands, self::MIGRATE_CONFIG_SCRIPT];
 
         return true;
-    }
-
-    /**
-     * @param string $composerFile
-     *
-     * @return stdClass|null
-     */
-    protected function readComposerFile(string $composerFile): stdClass|null
-    {
-        if (is_file($composerFile) === false) {
-            return null;
-        }
-
-        // Objects keep empty {} sections intact when the file is written back.
-        $composer = json_decode((new Filesystem())->readFile($composerFile), flags: JSON_THROW_ON_ERROR);
-        if ($composer instanceof stdClass === false) {
-            throw new UnexpectedValueException("{$composerFile} must contain a JSON object.");
-        }
-
-        return $composer;
     }
 
     /**

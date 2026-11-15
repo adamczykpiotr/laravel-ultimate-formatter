@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Console\Commands;
 
 use RuntimeException;
+use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 use UnexpectedValueException;
 
@@ -20,6 +22,12 @@ abstract class FormatterCommand extends Command
     protected const VERBOSITY_FLAGS = ['-q', '--quiet', '-v', '-vv', '-vvv', '--verbose'];
     protected const RECTOR_SCRIPT = 'vendor/bin/rector';
     protected const RECTOR_DEBUG_FLAG = '--debug';
+    protected const PHPSTAN_RULES_FILE = 'vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon';
+    protected const PHPSTAN_EXTENSION_FILES = [
+        'vendor/larastan/larastan/extension.neon',
+        'vendor/spaze/phpstan-disallowed-calls/extension.neon',
+        'vendor/phpat/phpat/extension.neon',
+    ];
 
     /**
      * @return void
@@ -111,6 +119,43 @@ abstract class FormatterCommand extends Command
     protected function phpstanConfigFile(string $path): string|null
     {
         return collect(self::PHPSTAN_CONFIG_FILES)->first(fn(string $file): bool => is_file("{$path}/{$file}"));
+    }
+
+    /**
+     * extension-installer already loads the extensions the ruleset configures, and PHPStan fails when one is included twice.
+     *
+     * @param string $path
+     *
+     * @return list<string>
+     */
+    protected function phpstanIncludes(string $path): array
+    {
+        $composer = $this->readComposerFile("{$path}/composer.json");
+        $usesExtensionInstaller = data_get($composer, 'require.phpstan/extension-installer') !== null
+            || data_get($composer, 'require-dev.phpstan/extension-installer') !== null;
+        $extensionFiles = $usesExtensionInstaller ? [] : self::PHPSTAN_EXTENSION_FILES;
+
+        return [...$extensionFiles, self::PHPSTAN_RULES_FILE];
+    }
+
+    /**
+     * @param string $composerFile
+     *
+     * @return stdClass|null
+     */
+    protected function readComposerFile(string $composerFile): stdClass|null
+    {
+        if (is_file($composerFile) === false) {
+            return null;
+        }
+
+        // Objects keep empty {} sections intact when the file is written back.
+        $composer = json_decode((new Filesystem())->readFile($composerFile), flags: JSON_THROW_ON_ERROR);
+        if ($composer instanceof stdClass === false) {
+            throw new UnexpectedValueException("{$composerFile} must contain a JSON object.");
+        }
+
+        return $composer;
     }
 
     /**
