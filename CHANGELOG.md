@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.3](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.2...v1.13.3) (2026-11-15)
+
+
+### Bug Fixes
+
+* **check:** fail when PHPStan doesn't load the formatter's ruleset ([#44](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/44)) ([91e6dcb](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/91e6dcb9df28b74654bff7f997711a9dbf4a8fce))
+
 ## [1.13.2](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.1...v1.13.2) (2026-11-15)
 
 
