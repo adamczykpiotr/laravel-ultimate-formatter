@@ -42,6 +42,36 @@ for `Log::shouldReceive()`.
 Larastan's `noEnvCallsOutsideOfConfig` stays on, so `env()` is only called in `config/`
 (`larastan.noEnvCallsOutsideOfConfig`).
 
+## Custom rules
+
+The invariants that neither disallowed-calls nor phpat can express, one class each in
+[`src/PhpStan/Rules`](../src/PhpStan/Rules).
+
+### Migrations
+
+These run inside classes that extend `Illuminate\Database\Migrations\Migration`. Larastan reads the
+schema from the migrations to type the model properties, and it skips schema calls whose names it
+can't read and arrow functions, so a dropped column would stay typed as present.
+
+| Rule                                                                                                                   | Identifier                                        |
+|------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
+| No column is defined after `$table->timestamps()` (or `timestampsTz()`, `nullableTimestamps()`) in the same closure. Indexes and foreign keys may follow. | `ultimateFormatter.migrationTimestampsLast`       |
+| Every migration has both `up()` and `down()`.                                                                          | `ultimateFormatter.migrationUpAndDown`            |
+| `Schema::` calls, the first argument of `$table->` calls (every argument of `drop*()` and `rename*()`), and `->constrained()`, `->references()`, `->on()` and `->after()` name tables and columns with string literals or literal arrays: no variables, properties, constants, method calls or loop variables. | `ultimateFormatter.migrationLiteralSchemaNames`   |
+| Schema closures are `function (Blueprint $table): void`, never `fn`.                                                   | `ultimateFormatter.migrationSchemaClosure`        |
+| Foreign keys use `foreignId(...)->constrained()`, not `unsignedBigInteger('*_id')` or `unsignedInteger('*_id')`.        | `ultimateFormatter.migrationForeignIdConstrained` |
+
+### Resources, enums, queued classes and models
+
+| Rule                                                                                                                   | Identifier                                         |
+|------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| String keys of the arrays a `JsonResource::toArray()` returns are camelCase. That includes nested arrays, arrays passed to `$this->merge()`, `mergeWhen()`, `mergeUnless()`, `when()` and `unless()`, and arrays returned from closures inside `toArray()`. | `ultimateFormatter.resourceKeysCamelCase`          |
+| Enum cases are `UPPER_SNAKE_CASE`.                                                                                     | `ultimateFormatter.enumCasesUpperSnakeCase`        |
+| A string-backed case's value equals its name (`ACTIVE = 'ACTIVE'`). Int-backed enums are skipped.                       | `ultimateFormatter.enumValuesMatchCaseNames`       |
+| Classes implementing `ShouldQueue` (jobs, queued listeners, mailables, notifications) declare no `private` properties, promoted ones included. `SerializesModels` reflects over the concrete class, so a private property on a parent arrives empty on the worker. | `ultimateFormatter.queuedClassNoPrivateProperties` |
+| Models don't declare `$with`. Eager-load per query with `with()`.                                                       | `ultimateFormatter.modelNoWith`                    |
+| Models don't declare `$appends`. Shape the output in a `JsonResource`.                                                  | `ultimateFormatter.modelNoAppends`                 |
+
 ## Architecture
 
 Via [phpat](https://github.com/carlosas/phpat). The rules are grouped by area, one class each, in

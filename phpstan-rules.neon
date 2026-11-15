@@ -79,6 +79,15 @@ parameters:
 
 rules:
     - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\NoLogShouldReceiveRule
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\MigrationTimestampsLastRule
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\MigrationUpAndDownRule
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\MigrationLiteralSchemaNamesRule
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\MigrationSchemaClosureRule
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\MigrationForeignIdRule
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\ResourceKeysCamelCaseRule
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\EnumCaseRule
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\QueuedClassPrivatePropertyRule
+    - AdamczykPiotr\UltimateFormatter\PhpStan\Rules\ModelWithAndAppendsRule
 
 services:
     -
