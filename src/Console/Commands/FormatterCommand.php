@@ -17,6 +17,7 @@ abstract class FormatterCommand extends Command
     protected const DEFAULT_CONFIG_FILE = __DIR__ . '/../../../config/ultimate-formatter.php';
     protected const PUBLISHED_CONFIG_FILE = 'config/ultimate-formatter.php';
     protected const PHPSTAN_CONFIG_FILES = ['phpstan.neon', 'phpstan.neon.dist', 'phpstan.dist.neon'];
+    protected const VERBOSITY_FLAGS = ['-q', '--quiet', '-v', '-vv', '-vvv', '--verbose'];
 
     /**
      * @return void
@@ -120,6 +121,11 @@ abstract class FormatterCommand extends Command
      */
     protected function runPhpScript(string $script, array $arguments, InputInterface $input, OutputInterface $output): int
     {
+        $arguments = $this->withVerbosity($arguments, $output);
+        if ($output->isVerbose()) {
+            $output->writeln("<comment>> php {$script} " . implode(' ', $arguments) . '</comment>');
+        }
+
         $command = [PHP_BINARY, $script, ...$arguments];
         if ($output->isDecorated()) {
             $command[] = '--ansi';
@@ -128,5 +134,31 @@ abstract class FormatterCommand extends Command
         $process = new Process($command, $this->projectPath($input), timeout: null);
 
         return $process->run(fn(string $type, string $buffer) => $output->write($buffer));
+    }
+
+    /**
+     * -q and -v override the verbosity flags in the configured arguments, so each tool prints as much as the formatter does.
+     *
+     * @param array<int, string> $arguments
+     * @param OutputInterface $output
+     *
+     * @return array<int, string>
+     */
+    protected function withVerbosity(array $arguments, OutputInterface $output): array
+    {
+        $flag = match (true) {
+            $output->isQuiet(), $output->isSilent() => '--quiet',
+            $output->isDebug() => '-vvv',
+            $output->isVeryVerbose() => '-vv',
+            $output->isVerbose() => '-v',
+            default => null,
+        };
+        if ($flag === null) {
+            return $arguments;
+        }
+
+        $configuredArguments = collect($arguments)->reject(fn(string $argument): bool => in_array($argument, self::VERBOSITY_FLAGS, true));
+
+        return [...$configuredArguments->values()->all(), $flag];
     }
 }

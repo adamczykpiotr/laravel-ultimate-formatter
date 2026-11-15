@@ -12,7 +12,7 @@ return [
         'migrate' => ['migrate', '--force'],
         'ide-helper' => ['ide-helper:models', '--reset', '--write', '--quiet'],
         'rector' => ['process', '--no-progress-bar', '--no-diffs'],
-        'php-cs-fixer' => ['fix', '--quiet'],
+        'php-cs-fixer' => ['fix', '--show-progress=none'],
     ],
     'check' => [
         'rector' => ['process', '--dry-run', '--no-progress-bar'],
