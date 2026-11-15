@@ -65,17 +65,6 @@ These flags replace any `--quiet` or `-v` in the [configured arguments](docs/con
 - [Formatting rules](docs/rules.md): everything `format` rewrites
 - [PHPStan ruleset](docs/phpstan-ruleset.md): every rule the ruleset reports, with its identifier
 
-### Upstream drift
-
-Rector drops rules from its sets in minor releases without a warning. `tests/Drift/Snapshot/rector-rules.txt` lists the Rector rules after the sets are expanded, with deprecated ones marked, so a dropped or deprecated rule shows up as a diff.
-
-```bash
-composer test:drift       # compare
-composer snapshot:update  # rewrite the snapshot, then review the diff
-```
-
-The snapshot depends on the installed Laravel version, so `composer test` leaves it out. The `upstream-drift` workflow runs it on every pull request and weekly.
-
 ## Changelog
 
 See [CHANGELOG](CHANGELOG.md) for what changed in each release.
