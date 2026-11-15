@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.2](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.14.1...v1.14.2) (2026-11-15)
+
+
+### Bug Fixes
+
+* package command edge cases from the 1.14.0 review ([#55](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/55)) ([#59](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/59)) ([390eb01](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/390eb01f541cc00675d9fd394a77ec3f2d1a20c8))
+
 ## [1.14.1](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.14.0...v1.14.1) (2026-11-15)
 
 
