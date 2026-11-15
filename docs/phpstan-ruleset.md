@@ -5,7 +5,7 @@
 can't fix safely. It reports them and leaves the fix to you.
 
 Every rule has its own identifier. To turn a rule off everywhere, set its identifier to `false` under
-`phpstan-rules` in `config/ultimate-formatter.php` (see [Ruleset flags](../README.md#ruleset-flags)).
+`phpstan-rules` in `config/ultimate-formatter.php` (see [Ruleset flags](configuration.md#ruleset-flags)).
 For deliberate exceptions in some paths, target the identifier with a baseline or an `ignoreErrors`
 entry. For example, controllers whose response shape outside consumers depend on can keep
 `response()->json()`:
