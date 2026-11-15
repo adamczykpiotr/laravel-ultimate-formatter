@@ -97,7 +97,7 @@ class NumericLiteralSeparatorFixer implements FixerInterface
     }
 
     /**
-     * IDs, years and SRIDs are codes, not quantities: `4326` reads as a code, `4_326` doesn't.
+     * IDs and years are codes, not quantities: `1990` reads as a year, `1_990` doesn't.
      *
      * @param Tokens<Token> $tokens
      * @param int $index
@@ -110,8 +110,7 @@ class NumericLiteralSeparatorFixer implements FixerInterface
             $words = $this->words($name);
 
             return in_array($words->last(), ['id', 'ids'], true)
-                || $words->contains(fn(string $word): bool => Str::contains($word, 'year'))
-                || $words->intersect(['srid', 'srids', 'crs'])->isNotEmpty();
+                || $words->contains(fn(string $word): bool => Str::contains($word, 'year'));
         });
     }
 
@@ -145,7 +144,7 @@ class NumericLiteralSeparatorFixer implements FixerInterface
 
         $names = [Str::trim($tokens[$target]->getContent(), '$\'"')];
 
-        // Enum cases are named after the code (`EPSG_2180_PL_1992`), so the enum's name counts too.
+        // Enum cases are named after the code (`FIRST_CENSUS = 1921`), so the enum's name counts too.
         $case = $tokens->getPrevMeaningfulToken($target);
         $enum = $tokens->getPrevTokenOfKind($target, [[T_ENUM]]);
         if ($case !== null && $tokens[$case]->isGivenKind(T_CASE) && $enum !== null) {
@@ -219,7 +218,7 @@ class NumericLiteralSeparatorFixer implements FixerInterface
      */
     protected function words(string $name): Collection
     {
-        // All-caps names (`LOCAL_SRID`) would otherwise split into single letters.
+        // All-caps names (`FIRST_YEAR`) would otherwise split into single letters.
         $normalized = Str::upper($name) === $name ? Str::lower($name) : $name;
 
         return Str::of(Str::snake($normalized))
