@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.8.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.7.0...v1.8.0) (2026-11-15)
+
+
+### Features
+
+* ship laravel-ide-helper and publish its config ([#32](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/32)) ([ae8887f](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/ae8887f1d728f830071f644a7ee83e25811ee1b2))
+
 # [1.7.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.6.1...v1.7.0) (2026-11-15)
 
 
