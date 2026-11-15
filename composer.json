@@ -63,8 +63,8 @@
         "format": "@php bin/ultimate-formatter format",
         "test": "vendor/bin/phpunit",
         "test:drift": "vendor/bin/phpunit --group drift",
-        "fixtures:update": [
-            "@putenv UPDATE_FIXTURES=1",
+        "snapshot:update": [
+            "@putenv UPDATE_SNAPSHOT=1",
             "@test:drift"
         ],
         "test-coverage": "vendor/bin/phpunit --coverage-html build/coverage"

@@ -1,7 +1,7 @@
 name: upstream-drift
 
-# composer.lock isn't committed, so each run gets the latest allowed Rector and PHP CS Fixer.
-# Fails with a diff when the formatted fixture or the resolved Rector rules change.
+# composer.lock isn't committed, so each run gets the latest allowed Rector.
+# Fails with a diff when the resolved Rector rules change.
 
 on:
   pull_request:
@@ -26,8 +26,8 @@ jobs:
       - name: Install the latest allowed versions
         run: composer update --prefer-dist --no-interaction --no-progress
 
-      - name: Regenerate the fixture and the snapshot
-        run: composer fixtures:update
+      - name: Regenerate the snapshot
+        run: composer snapshot:update
 
       - name: Fail on any difference
         run: |

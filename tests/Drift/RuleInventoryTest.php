@@ -38,7 +38,7 @@ class RuleInventoryTest extends TestCase
             ->sort()
             ->implode("\n") . "\n";
 
-        if (getenv('UPDATE_FIXTURES') === '1') {
+        if (getenv('UPDATE_SNAPSHOT') === '1') {
             (new Filesystem())->dumpFile(self::SNAPSHOT_FILE, $snapshot);
         }
 

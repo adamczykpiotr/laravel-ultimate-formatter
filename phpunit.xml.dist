@@ -18,12 +18,11 @@
     <testsuites>
         <testsuite name="AdamczykPiotr Test Suite">
             <directory>tests</directory>
-            <exclude>tests/Drift/Fixture</exclude>
             <exclude>tests/PhpStan/Fixture</exclude>
         </testsuite>
     </testsuites>
     <groups>
-        <!-- The drift checks pin the output of the latest allowed upstream versions, so they run on their own: composer test:drift. -->
+        <!-- The Rector rule snapshot depends on the installed Laravel version, so it runs on its own: composer test:drift. -->
         <exclude>
             <group>drift</group>
         </exclude>

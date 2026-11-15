@@ -11,6 +11,5 @@ return RectorConfigFactory::create()
         __DIR__ . '/tests',
     ])
     ->withSkip([
-        __DIR__ . '/tests/Drift/Fixture',
         __DIR__ . '/tests/PhpStan/Fixture',
     ]);

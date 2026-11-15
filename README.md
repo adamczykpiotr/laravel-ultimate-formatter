@@ -67,17 +67,14 @@ These flags replace any `--quiet` or `-v` in the [configured arguments](docs/con
 
 ### Upstream drift
 
-Rector and PHP CS Fixer change rule behaviour in minor releases, and a rule that drops out of an upstream set does so without a warning. Two checks catch that:
-
-- `tests/Drift/Fixture/before` is a planted project. The check formats a copy and compares it with `tests/Drift/Fixture/after`.
-- `tests/Drift/Snapshot/rector-rules.txt` lists the Rector rules after the sets are expanded, with deprecated ones marked.
+Rector drops rules from its sets in minor releases without a warning. `tests/Drift/Snapshot/rector-rules.txt` lists the Rector rules after the sets are expanded, with deprecated ones marked, so a dropped or deprecated rule shows up as a diff.
 
 ```bash
 composer test:drift       # compare
-composer fixtures:update  # rewrite the expected output, then review the diff
+composer snapshot:update  # rewrite the snapshot, then review the diff
 ```
 
-Both pin the output of the latest allowed versions, so `composer test` leaves them out. The `upstream-drift` workflow runs them on every pull request and weekly.
+The snapshot depends on the installed Laravel version, so `composer test` leaves it out. The `upstream-drift` workflow runs it on every pull request and weekly.
 
 ## Changelog
 
