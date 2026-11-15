@@ -11,6 +11,7 @@ $finder = Finder::create()
         __DIR__ . '/src',
         __DIR__ . '/tests',
     ])
+    ->exclude('PhpStan/Fixture')
     ->name('*.php');
 
 return FixerConfigFactory::create($finder, __DIR__ . '/build/.php-cs-fixer.cache');

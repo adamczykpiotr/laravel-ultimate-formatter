@@ -60,6 +60,17 @@ enum ProjectLayout: string
     }
 
     /**
+     * @return list<string>
+     */
+    public function phpstanDirectories(): array
+    {
+        return match ($this) {
+            self::APP => ['app', 'database', 'routes', 'tests'],
+            self::PACKAGE => ['database', 'src', 'tests', 'workbench'],
+        };
+    }
+
+    /**
      * @return string
      */
     public function fixerCacheFile(): string

@@ -21,6 +21,13 @@ class InstallCommand extends FormatterCommand
     protected const OWN_COMPOSER_FILE = __DIR__ . '/../../../composer.json';
     protected const BLAME_IGNORE_REVS_FILE = '.git-blame-ignore-revs';
     protected const CI_WORKFLOW_FILE = '.github/workflows/code-style.yml';
+    protected const PHPSTAN_CONFIG_FILE = 'phpstan.neon';
+    protected const PHPSTAN_RULES_FILE = 'vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon';
+    protected const PHPSTAN_EXTENSION_FILES = [
+        'vendor/larastan/larastan/extension.neon',
+        'vendor/spaze/phpstan-disallowed-calls/extension.neon',
+        'vendor/phpat/phpat/extension.neon',
+    ];
     protected const COMPOSER_SCRIPTS = [
         'check' => 'vendor/bin/ultimate-formatter check',
         'format' => 'vendor/bin/ultimate-formatter format',
@@ -58,16 +65,17 @@ class InstallCommand extends FormatterCommand
         $files = $this->renderFiles($path, $layout, $input->getOption('ci') === true);
 
         foreach ($files as $target => $contents) {
-            $targetPath = "{$path}/{$target}";
-            // The blame ignore file holds recorded commit SHAs, so --force must not reset it.
-            $keepsExisting = $force === false || $target === self::BLAME_IGNORE_REVS_FILE;
-            if ($keepsExisting && $filesystem->exists($targetPath)) {
-                $output->writeln("Skipped {$target}, it already exists.");
+            $existingFile = $this->existingFile($path, $target);
+            // The blame ignore file holds recorded commit SHAs, and a phpstan.neon would shadow a .dist config, so --force keeps both.
+            $keepsExisting = $force === false || $target === self::BLAME_IGNORE_REVS_FILE || $existingFile !== $target;
+            if ($keepsExisting && $existingFile !== null) {
+                $hint = $target === self::PHPSTAN_CONFIG_FILE ? ' Include ' . self::PHPSTAN_RULES_FILE . ' in it to run the ruleset.' : '';
+                $output->writeln("Skipped {$target}, {$existingFile} already exists.{$hint}");
 
                 continue;
             }
 
-            $filesystem->dumpFile($targetPath, $contents);
+            $filesystem->dumpFile("{$path}/{$target}", $contents);
             $output->writeln("Wrote {$target}.");
         }
 
@@ -95,11 +103,14 @@ class InstallCommand extends FormatterCommand
             '{{fixer_cache_file}}' => $layout->fixerCacheFile(),
             '{{rector_paths}}' => $this->renderPhpPaths($path, $layout->rectorDirectories()),
             '{{rector_skip}}' => $this->renderRectorSkip($path, $layout->rectorSkippedDirectories()),
+            '{{phpstan_includes}}' => $this->renderPhpstanIncludes($path),
+            '{{phpstan_paths}}' => $this->renderNeonPaths($path, $layout->phpstanDirectories()),
         ];
 
         $files = [
             '.php-cs-fixer.php' => $this->renderStub('php-cs-fixer.php.stub', $replacements),
             'rector.php' => $this->renderStub('rector.php.stub', $replacements),
+            self::PHPSTAN_CONFIG_FILE => $this->renderStub('phpstan.neon.stub', $replacements),
             self::BLAME_IGNORE_REVS_FILE => $this->renderStub('git-blame-ignore-revs.stub', $replacements),
         ];
 
@@ -140,6 +151,54 @@ class InstallCommand extends FormatterCommand
             ->filter(fn(string $directory): bool => is_dir("{$path}/{$directory}"))
             ->map(fn(string $directory): string => "        __DIR__ . '/{$directory}',")
             ->implode("\n");
+    }
+
+    /**
+     * @param string $path
+     * @param list<string> $directories
+     *
+     * @return string
+     */
+    protected function renderNeonPaths(string $path, array $directories): string
+    {
+        return collect($directories)
+            ->filter(fn(string $directory): bool => is_dir("{$path}/{$directory}"))
+            ->map(fn(string $directory): string => "        - {$directory}")
+            ->implode("\n");
+    }
+
+    /**
+     * extension-installer already loads the extensions the ruleset configures, and PHPStan fails when one is included twice.
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    protected function renderPhpstanIncludes(string $path): string
+    {
+        $composer = $this->readComposerFile("{$path}/composer.json");
+        $usesExtensionInstaller = data_get($composer, 'require.phpstan/extension-installer') !== null
+            || data_get($composer, 'require-dev.phpstan/extension-installer') !== null;
+        $extensionFiles = $usesExtensionInstaller ? [] : self::PHPSTAN_EXTENSION_FILES;
+
+        return collect([...$extensionFiles, self::PHPSTAN_RULES_FILE])
+            ->map(fn(string $file): string => "    - {$file}")
+            ->implode("\n");
+    }
+
+    /**
+     * @param string $path
+     * @param string $target
+     *
+     * @return string|null
+     */
+    protected function existingFile(string $path, string $target): string|null
+    {
+        if ($target === self::PHPSTAN_CONFIG_FILE) {
+            return $this->phpstanConfigFile($path);
+        }
+
+        return is_file("{$path}/{$target}") ? $target : null;
     }
 
     /**
