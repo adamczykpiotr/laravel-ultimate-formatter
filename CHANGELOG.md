@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.15.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.14.2...v1.15.0) (2026-11-15)
+
+
+### Features
+
+* refactor typed config, shared tool loop and rule helpers ([#58](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/58)) ([97f60d9](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/97f60d9c2c2261353293d46373da9b1d9a24d496)), closes [#56](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/56)
+
 ## [1.14.2](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.14.1...v1.14.2) (2026-11-15)
 
 

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'config-version' => '1.14.2',
+    'config-version' => '1.15.0',
 
     'pre' => [
         'clear-cache' => false,
