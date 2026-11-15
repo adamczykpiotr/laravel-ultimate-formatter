@@ -11,8 +11,6 @@ use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\Closure;
-use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
@@ -53,16 +51,13 @@ class MigrationTimestampsLastRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        if (($node instanceof StaticCall || $node instanceof MethodCall) === false || $node->isFirstClassCallable()) {
-            return [];
-        }
-
-        if (MigrationSchema::isInMigration($scope) === false || MigrationSchema::isSchemaCall($node, $scope) === false) {
+        $call = MigrationSchema::migrationCall($node, $scope);
+        if ($call === null || MigrationSchema::isSchemaCall($call, $scope) === false) {
             return [];
         }
 
         $errors = [];
-        foreach ($node->getArgs() as $arg) {
+        foreach ($call->getArgs() as $arg) {
             if ($arg->value instanceof Closure) {
                 $errors = [...$errors, ...$this->columnsAfterTimestamps($arg->value)];
             }

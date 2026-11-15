@@ -25,19 +25,17 @@ class ComposerScripts
     ) {}
 
     /**
-     * Returns null when the project has no composer.json.
-     *
      * @param string $path
      * @param ProjectLayout $layout
      *
-     * @return ComposerScriptsChange|null
+     * @return ComposerScriptsChange
      */
-    public function install(string $path, ProjectLayout $layout): ComposerScriptsChange|null
+    public function install(string $path, ProjectLayout $layout): ComposerScriptsChange
     {
         $composerFile = "{$path}/composer.json";
         $composer = $this->composerFile->read($composerFile);
         if ($composer === null) {
-            return null;
+            return new ComposerScriptsChange(hasComposerFile: false);
         }
 
         $scripts = $composer->scripts ?? null;
@@ -50,7 +48,7 @@ class ComposerScripts
 
         // Only an app publishes config/ultimate-formatter.php, so only an app migrates it after each upgrade.
         $addedMigrateConfig = $layout === ProjectLayout::APP && $this->addMigrateConfigScript($scripts);
-        $change = new ComposerScriptsChange($missingScripts->keys()->all(), $addedMigrateConfig);
+        $change = new ComposerScriptsChange(true, $missingScripts->keys()->all(), $addedMigrateConfig);
         if ($change->isEmpty()) {
             return $change;
         }

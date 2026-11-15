@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Console\Commands;
 
 use AdamczykPiotr\UltimateFormatter\Config\ConfigReader;
+use AdamczykPiotr\UltimateFormatter\Console\RunMode;
 use AdamczykPiotr\UltimateFormatter\Console\Tool;
+use AdamczykPiotr\UltimateFormatter\Console\ToolRun;
 use AdamczykPiotr\UltimateFormatter\Console\ToolRunner;
 use AdamczykPiotr\UltimateFormatter\Exceptions\PhpStanConfigNotLoadableException;
 use AdamczykPiotr\UltimateFormatter\PhpStan\PhpStanSetup;
@@ -59,27 +61,19 @@ class CheckCommand extends FormatterCommand
             return self::FAILURE;
         }
 
-        // The fixer would check code Rector still has to change, so stop at the first failure like `format` does.
-        $rectorExitCode = $this->toolRunner->run(Tool::RECTOR, $this->configReader->arguments($path, 'check', 'rector'), $path, $output);
-        if ($rectorExitCode !== self::SUCCESS) {
-            return self::FAILURE;
-        }
-
-        $fixerExitCode = $this->toolRunner->run(Tool::PHP_CS_FIXER, $this->configReader->arguments($path, 'check', 'php-cs-fixer'), $path, $output);
-        if ($fixerExitCode !== self::SUCCESS) {
-            return self::FAILURE;
-        }
-
+        // The fixer would check code Rector still has to change, so the tools run in order and stop at the first failure.
         // Without a config PHPStan has no paths to analyse, so a project that never published one keeps the formatting check.
+        $config = $this->configReader->forProject($path);
+        $tools = collect([Tool::RECTOR, Tool::PHP_CS_FIXER, Tool::PHPSTAN])
+            ->reject(fn(Tool $tool): bool => $tool === Tool::PHPSTAN && $phpstanConfigFile === null)
+            ->map(fn(Tool $tool): ToolRun => new ToolRun($tool, $config->toolArguments(RunMode::CHECK, $tool)))
+            ->values();
+        if ($this->toolRunner->runInOrder($tools, $path, $output) !== self::SUCCESS) {
+            return self::FAILURE;
+        }
+
         if ($phpstanConfigFile === null) {
             $output->writeln('Skipped PHPStan, the project has no phpstan.neon.');
-
-            return self::SUCCESS;
-        }
-
-        $phpstanExitCode = $this->toolRunner->run(Tool::PHPSTAN, $this->configReader->arguments($path, 'check', 'phpstan'), $path, $output);
-        if ($phpstanExitCode !== self::SUCCESS) {
-            return self::FAILURE;
         }
 
         return self::SUCCESS;

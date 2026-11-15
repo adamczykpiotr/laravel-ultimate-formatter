@@ -110,14 +110,14 @@ class InstallCommand extends FormatterCommand
     }
 
     /**
-     * @param ComposerScriptsChange|null $change
+     * @param ComposerScriptsChange $change
      * @param OutputInterface $output
      *
      * @return void
      */
-    protected function writeComposerScriptsChange(ComposerScriptsChange|null $change, OutputInterface $output): void
+    protected function writeComposerScriptsChange(ComposerScriptsChange $change, OutputInterface $output): void
     {
-        if ($change === null) {
+        if ($change->hasComposerFile === false) {
             $output->writeln('Skipped the composer scripts, composer.json does not exist.');
 
             return;

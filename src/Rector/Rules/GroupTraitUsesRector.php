@@ -38,13 +38,11 @@ final class GroupTraitUsesRector extends AbstractRector
             return null;
         }
 
-        $traitUses = collect($node->stmts)->filter(fn(Node $stmt): bool => $stmt instanceof TraitUse);
-        if ($traitUses->isEmpty()) {
+        $traitUses = collect($node->stmts)->whereInstanceOf(TraitUse::class);
+        $firstTraitUse = $traitUses->first();
+        if ($firstTraitUse === null) {
             return null;
         }
-
-        /** @var TraitUse $firstTraitUse */
-        $firstTraitUse = $traitUses->first();
         $traits = $traitUses
             ->flatMap(fn(TraitUse $traitUse): array => $traitUse->traits)
             ->unique(fn(Name $trait): string => strtolower($this->getName($trait)))

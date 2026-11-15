@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Tests\Unit;
 
 use AdamczykPiotr\UltimateFormatter\Config\ConfigReader;
+use AdamczykPiotr\UltimateFormatter\Config\FormatterConfig;
+use AdamczykPiotr\UltimateFormatter\Console\ArtisanStep;
+use AdamczykPiotr\UltimateFormatter\Console\RunMode;
+use AdamczykPiotr\UltimateFormatter\Console\Tool;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use UnexpectedValueException;
 
-class ConfigReaderTest extends TestCase
+class FormatterConfigTest extends TestCase
 {
     protected string $projectPath;
     protected Filesystem $filesystem;
@@ -44,7 +48,7 @@ class ConfigReaderTest extends TestCase
      */
     public function test_uses_package_defaults_without_a_published_config(): void
     {
-        $this->assertSame(['process', '--dry-run', '--no-progress-bar'], $this->configReader->arguments($this->projectPath, 'check', 'rector'));
+        $this->assertSame(['process', '--dry-run', '--no-progress-bar'], $this->config()->toolArguments(RunMode::CHECK, Tool::RECTOR));
     }
 
     /**
@@ -54,7 +58,7 @@ class ConfigReaderTest extends TestCase
     {
         $this->publishConfig("['check' => ['rector' => ['process', '--dry-run']]]");
 
-        $this->assertSame(['process', '--dry-run'], $this->configReader->arguments($this->projectPath, 'check', 'rector'));
+        $this->assertSame(['process', '--dry-run'], $this->config()->toolArguments(RunMode::CHECK, Tool::RECTOR));
     }
 
     /**
@@ -64,7 +68,7 @@ class ConfigReaderTest extends TestCase
     {
         $this->publishConfig("['check' => ['rector' => ['process']]]");
 
-        $this->assertSame(['fix', '--show-progress=none'], $this->configReader->arguments($this->projectPath, 'format', 'php-cs-fixer'));
+        $this->assertSame(['fix', '--show-progress=none'], $this->config()->toolArguments(RunMode::FORMAT, Tool::PHP_CS_FIXER));
     }
 
     /**
@@ -77,7 +81,7 @@ class ConfigReaderTest extends TestCase
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Config ultimate-formatter.check.rector must contain only strings.');
 
-        $this->configReader->arguments($this->projectPath, 'check', 'rector');
+        $this->config()->toolArguments(RunMode::CHECK, Tool::RECTOR);
     }
 
     /**
@@ -90,7 +94,26 @@ class ConfigReaderTest extends TestCase
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Config ultimate-formatter.pre.migrate must be a boolean.');
 
-        $this->configReader->flag($this->projectPath, 'pre', 'migrate');
+        $this->config()->runsBeforeFormat(ArtisanStep::MIGRATE);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_reads_artisan_step_arguments_from_the_format_section(): void
+    {
+        $this->publishConfig("['format' => ['migrate' => ['migrate', '--seed']]]");
+
+        $this->assertSame(['migrate', '--seed'], $this->config()->artisanArguments(ArtisanStep::MIGRATE));
+        $this->assertSame(['optimize:clear', '--quiet'], $this->config()->artisanArguments(ArtisanStep::CLEAR_CACHE));
+    }
+
+    /**
+     * @return FormatterConfig
+     */
+    protected function config(): FormatterConfig
+    {
+        return $this->configReader->forProject($this->projectPath);
     }
 
     /**

@@ -79,6 +79,8 @@ class RulesetTest extends TestCase
             'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:36 ultimateFormatter.migrationSchemaClosure',
             'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:38 ultimateFormatter.migrationSchemaClosure',
             'database/migrations/2026_01_03_000000_add_columns_to_posts_table.php:9 ultimateFormatter.migrationUpAndDown',
+            'database/migrations/2026_01_04_000000_add_named_columns_to_posts_table.php:14 ultimateFormatter.migrationForeignIdConstrained',
+            'database/migrations/2026_01_04_000000_add_named_columns_to_posts_table.php:15 ultimateFormatter.migrationLiteralSchemaNames',
             'tests/TagServiceTest.php:15 ultimateFormatter.disallowLogShouldReceive',
             'tests/TagServiceTest.php:19 ultimateFormatter.disallowAppEnvironment',
         ], $this->analyseFixtures());

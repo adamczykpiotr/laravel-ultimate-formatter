@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers;
 
 use Illuminate\Support\Str;
-use PhpCsFixer\Fixer\FixerInterface;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
@@ -15,7 +14,7 @@ use PhpCsFixer\Tokenizer\Tokens;
 use PhpCsFixer\Tokenizer\TokensAnalyzer;
 use SplFileInfo;
 
-class SingleTraitUseStatementFixer implements FixerInterface
+class SingleTraitUseStatementFixer extends BaseFixer
 {
     /**
      * @param Tokens<Token> $tokens
@@ -25,14 +24,6 @@ class SingleTraitUseStatementFixer implements FixerInterface
     public function isCandidate(Tokens $tokens): bool
     {
         return $tokens->isTokenKindFound(CT::T_USE_TRAIT);
-    }
-
-    /**
-     * @return bool
-     */
-    public function isRisky(): bool
-    {
-        return false;
     }
 
     /**
@@ -104,16 +95,6 @@ class SingleTraitUseStatementFixer implements FixerInterface
     public function getPriority(): int
     {
         return 70;
-    }
-
-    /**
-     * @param SplFileInfo $file
-     *
-     * @return bool
-     */
-    public function supports(SplFileInfo $file): bool
-    {
-        return true;
     }
 
     /**

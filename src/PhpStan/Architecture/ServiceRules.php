@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\PhpStan\Architecture;
 
+use AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\Support\ClassKind;
 use PHPat\Selector\Selector;
 use PHPat\Test\Builder\Rule;
 use PHPat\Test\PHPat;
@@ -17,7 +18,7 @@ class ServiceRules
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace('App\Services'))
-            ->excluding(Selector::isAbstract(), Selector::isInterface(), Selector::isEnum())
+            ->excluding(ClassKind::notConcreteClass())
             ->should()->beNamed('/Service$/', regex: true)
             ->because('services are named {Name}Service.');
     }
@@ -30,10 +31,7 @@ class ServiceRules
         return PHPat::rule()
             ->classes(Selector::inNamespace('App\Services'))
             ->excluding(
-                Selector::isAbstract(),
-                Selector::isInterface(),
-                Selector::isEnum(),
-                Selector::isTrait(),
+                ClassKind::notConcreteClass(),
                 Selector::classname('/\\\\Base[A-Z][^\\\\]*$/', regex: true),
             )
             ->should()->beFinal()
@@ -47,7 +45,7 @@ class ServiceRules
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace('App\Services'))
-            ->excluding(Selector::isInterface(), Selector::isEnum(), Selector::isTrait())
+            ->excluding(ClassKind::notClass())
             ->should()->beReadonly()
             ->because('services are stateless, so the same instance can serve every call.');
     }
