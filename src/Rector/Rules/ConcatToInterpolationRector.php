@@ -57,10 +57,9 @@ final class ConcatToInterpolationRector extends AbstractRector
         $parts = $this->mergeAdjacentStringParts($operands->flatMap(fn(Expr $operand): array => $this->toParts($operand)));
         $hasExpressionPart = $parts->contains(fn(Expr|InterpolatedStringPart $part): bool => $part instanceof InterpolatedStringPart === false);
         if ($hasExpressionPart === false) {
-            /** @var InterpolatedStringPart|null $onlyPart */
             $onlyPart = $parts->first();
 
-            return new String_($onlyPart->value ?? '');
+            return new String_($onlyPart instanceof InterpolatedStringPart ? $onlyPart->value : '');
         }
 
         return new InterpolatedString($parts->all(), ['kind' => String_::KIND_DOUBLE_QUOTED]);

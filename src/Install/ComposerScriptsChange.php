@@ -7,12 +7,14 @@ namespace AdamczykPiotr\UltimateFormatter\Install;
 class ComposerScriptsChange
 {
     /**
+     * @param bool $hasComposerFile
      * @param array<int, string> $addedScripts
      * @param bool $addedMigrateConfig
      */
     public function __construct(
-        public readonly array $addedScripts,
-        public readonly bool $addedMigrateConfig,
+        public readonly bool $hasComposerFile,
+        public readonly array $addedScripts = [],
+        public readonly bool $addedMigrateConfig = false,
     ) {}
 
     /**

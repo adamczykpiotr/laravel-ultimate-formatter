@@ -61,11 +61,11 @@ final class ForeachNestedIfsToEarlyContinueRector extends AbstractRector
 
         $guards = [];
         $body = $node->stmts;
-        while (count($body) === 1 && $this->isPlainIf($body[0])) {
-            /** @var If_ $if */
-            $if = $body[0];
+        $if = $this->onlyPlainIf($body);
+        while ($if !== null) {
             $guards[] = new If_($this->negate($if->cond), ['stmts' => [new Continue_()]], $if->getAttributes());
             $body = $if->stmts;
+            $if = $this->onlyPlainIf($body);
         }
 
         if (count($guards) < 2) {
@@ -112,13 +112,17 @@ AFTER,
     }
 
     /**
-     * @param Stmt $stmt
+     * The body's only statement, when it is an if without else or elseif branches.
      *
-     * @return bool
+     * @param array<array-key, Stmt> $body
+     *
+     * @return If_|null
      */
-    protected function isPlainIf(Stmt $stmt): bool
+    protected function onlyPlainIf(array $body): ?If_
     {
-        return $stmt instanceof If_ && $stmt->else === null && $stmt->elseifs === [];
+        $stmt = count($body) === 1 ? collect($body)->first() : null;
+
+        return $stmt instanceof If_ && $stmt->else === null && $stmt->elseifs === [] ? $stmt : null;
     }
 
     /**

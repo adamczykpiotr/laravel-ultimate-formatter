@@ -10,8 +10,6 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\Closure;
-use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
@@ -48,20 +46,17 @@ class MigrationSchemaClosureRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        if (($node instanceof StaticCall || $node instanceof MethodCall) === false || $node->isFirstClassCallable()) {
+        $call = MigrationSchema::migrationCall($node, $scope);
+        if ($call === null || MigrationSchema::isSchemaCall($call, $scope) === false) {
             return [];
         }
 
-        if (MigrationSchema::isInMigration($scope) === false || MigrationSchema::isSchemaCall($node, $scope) === false) {
-            return [];
-        }
-
-        if (in_array(MigrationSchema::methodName($node), self::BLUEPRINT_CLOSURE_METHODS, true) === false) {
+        if (in_array(MigrationSchema::methodName($call), self::BLUEPRINT_CLOSURE_METHODS, true) === false) {
             return [];
         }
 
         $errors = [];
-        foreach ($node->getArgs() as $arg) {
+        foreach ($call->getArgs() as $arg) {
             $callback = $arg->value;
             if ($callback instanceof ArrowFunction || ($callback instanceof Closure && $this->hasSchemaSignature($callback, $scope) === false)) {
                 $errors[] = RuleErrorBuilder::message('Schema closures are function (Blueprint $table): void, never fn, so PHPStan knows $table is a Blueprint and the migration rules can check it.')

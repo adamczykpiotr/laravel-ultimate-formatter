@@ -42,7 +42,7 @@ class MigrationForeignIdRule implements Rule
             return [];
         }
 
-        $column = $node->getArgs()[0]->value ?? null;
+        $column = MigrationSchema::argument($node, 0, 'column')?->value;
         if ($column instanceof String_ === false || Str::endsWith($column->value, '_id') === false) {
             return [];
         }

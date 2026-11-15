@@ -61,23 +61,20 @@ class MigrationLiteralSchemaNamesRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        if (($node instanceof StaticCall || $node instanceof MethodCall) === false || $node->isFirstClassCallable()) {
+        $call = MigrationSchema::migrationCall($node, $scope);
+        $method = $call === null ? null : MigrationSchema::methodName($call);
+        if ($call === null || $method === null) {
             return [];
         }
 
-        $method = MigrationSchema::methodName($node);
-        if ($method === null || MigrationSchema::isInMigration($scope) === false) {
-            return [];
-        }
-
-        $names = $this->nameArguments($node, $method, $scope)
+        $names = $this->nameArguments($call, $method, $scope)
             ->reject(fn(Arg $arg): bool => $arg->value instanceof Closure || $arg->value instanceof ArrowFunction);
         if ($names->every(fn(Arg $arg): bool => $arg->unpack === false && $this->isLiteral($arg->value))) {
             return [];
         }
 
         return [
-            RuleErrorBuilder::message("{$this->callLabel($node, $method)} must name tables and columns with string literals, not variables, properties, constants or loops, so Larastan can read the schema.")
+            RuleErrorBuilder::message("{$this->callLabel($call, $method)} must name tables and columns with string literals, not variables, properties, constants or loops, so Larastan can read the schema.")
                 ->identifier('ultimateFormatter.migrationLiteralSchemaNames')
                 ->build(),
         ];
@@ -99,13 +96,13 @@ class MigrationLiteralSchemaNamesRule implements Rule
             return $method === 'connection' ? new Collection() : $args;
         }
 
-        if (MigrationSchema::isBlueprintCall($call, $scope)) {
+        if ($call instanceof MethodCall && MigrationSchema::isBlueprintCall($call, $scope)) {
             if (in_array($method, self::BLUEPRINT_OPTION_METHODS, true)) {
                 return new Collection();
             }
 
             // The other arguments of a column definition are lengths, allowed values and other settings.
-            return Str::startsWith($method, ['drop', 'rename']) ? $args : $args->take(1);
+            return Str::startsWith($method, ['drop', 'rename']) ? $args : $this->nameArgument($call, $method, $scope);
         }
 
         if ($call instanceof MethodCall && in_array($method, self::COLUMN_DEFINITION_NAME_METHODS, true)) {
@@ -116,6 +113,25 @@ class MigrationLiteralSchemaNamesRule implements Rule
         }
 
         return new Collection();
+    }
+
+    /**
+     * The argument for the first parameter of a column definition, which names the column, passed by position or by name.
+     *
+     * @param MethodCall $call
+     * @param string $method
+     * @param Scope $scope
+     *
+     * @return Collection<int, Arg>
+     */
+    protected function nameArgument(MethodCall $call, string $method, Scope $scope): Collection
+    {
+        $parameter = $scope->getMethodReflection($scope->getType($call->var), $method)?->getVariants()[0]->getParameters()[0] ?? null;
+        if ($parameter === null) {
+            return collect($call->getArgs())->take(1)->values();
+        }
+
+        return collect([MigrationSchema::argument($call, 0, $parameter->getName())])->filter()->values();
     }
 
     /**

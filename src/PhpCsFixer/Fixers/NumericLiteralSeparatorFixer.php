@@ -6,7 +6,6 @@ namespace AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use PhpCsFixer\Fixer\FixerInterface;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
@@ -15,7 +14,7 @@ use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 use SplFileInfo;
 
-class NumericLiteralSeparatorFixer implements FixerInterface
+class NumericLiteralSeparatorFixer extends BaseFixer
 {
     protected const MIN_DIGITS = 4;
     protected const GROUP_SIZE = 3;
@@ -35,14 +34,6 @@ class NumericLiteralSeparatorFixer implements FixerInterface
     public function isCandidate(Tokens $tokens): bool
     {
         return $tokens->isAnyTokenKindsFound([T_LNUMBER, T_DNUMBER]);
-    }
-
-    /**
-     * @return bool
-     */
-    public function isRisky(): bool
-    {
-        return false;
     }
 
     /**
@@ -86,24 +77,6 @@ class NumericLiteralSeparatorFixer implements FixerInterface
     public function getName(): string
     {
         return 'UltimateFormatter/numeric_literal_separator';
-    }
-
-    /**
-     * @return int
-     */
-    public function getPriority(): int
-    {
-        return 0;
-    }
-
-    /**
-     * @param SplFileInfo $file
-     *
-     * @return bool
-     */
-    public function supports(SplFileInfo $file): bool
-    {
-        return true;
     }
 
     /**

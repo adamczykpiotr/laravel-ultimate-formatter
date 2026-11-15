@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Console;
 
+use Illuminate\Support\Collection;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
@@ -12,6 +14,27 @@ class ToolRunner
 {
     protected const VERBOSITY_FLAGS = ['-q', '--quiet', '-v', '-vv', '-vvv', '--verbose'];
     protected const RECTOR_DEBUG_FLAG = '--debug';
+
+    /**
+     * Each tool works on what the one before it left, so the first failure stops the run and its exit code is returned.
+     *
+     * @param Collection<int, ToolRun> $runs
+     * @param string $projectPath
+     * @param OutputInterface $output
+     *
+     * @return int
+     */
+    public function runInOrder(Collection $runs, string $projectPath, OutputInterface $output): int
+    {
+        foreach ($runs as $run) {
+            $exitCode = $this->run($run->tool, $run->arguments, $projectPath, $output);
+            if ($exitCode !== Command::SUCCESS) {
+                return $exitCode;
+            }
+        }
+
+        return Command::SUCCESS;
+    }
 
     /**
      * @param Tool $tool

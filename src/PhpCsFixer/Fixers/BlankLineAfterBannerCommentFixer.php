@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers;
 
-use PhpCsFixer\Fixer\FixerInterface;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
@@ -12,7 +11,7 @@ use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 use SplFileInfo;
 
-class BlankLineAfterBannerCommentFixer implements FixerInterface
+class BlankLineAfterBannerCommentFixer extends BaseFixer
 {
     /**
      * @param Tokens<Token> $tokens
@@ -22,14 +21,6 @@ class BlankLineAfterBannerCommentFixer implements FixerInterface
     public function isCandidate(Tokens $tokens): bool
     {
         return $tokens->isTokenKindFound(T_COMMENT);
-    }
-
-    /**
-     * @return bool
-     */
-    public function isRisky(): bool
-    {
-        return false;
     }
 
     /**
@@ -78,24 +69,6 @@ class BlankLineAfterBannerCommentFixer implements FixerInterface
     public function getName(): string
     {
         return 'UltimateFormatter/blank_line_after_banner_comment';
-    }
-
-    /**
-     * @return int
-     */
-    public function getPriority(): int
-    {
-        return 0;
-    }
-
-    /**
-     * @param SplFileInfo $file
-     *
-     * @return bool
-     */
-    public function supports(SplFileInfo $file): bool
-    {
-        return true;
     }
 
     /**

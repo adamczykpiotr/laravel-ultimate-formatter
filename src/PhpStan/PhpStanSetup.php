@@ -7,7 +7,6 @@ namespace AdamczykPiotr\UltimateFormatter\PhpStan;
 use AdamczykPiotr\UltimateFormatter\Composer\ComposerFile;
 use AdamczykPiotr\UltimateFormatter\Console\Tool;
 use AdamczykPiotr\UltimateFormatter\Exceptions\PhpStanConfigNotLoadableException;
-use Illuminate\Support\Arr;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
@@ -90,6 +89,6 @@ class PhpStanSetup
 
         $parameters = json_decode($process->getOutput(), true);
 
-        return is_array($parameters) && Arr::has($parameters, self::RULESET_PARAMETER);
+        return is_array($parameters) && collect($parameters)->has(self::RULESET_PARAMETER);
     }
 }

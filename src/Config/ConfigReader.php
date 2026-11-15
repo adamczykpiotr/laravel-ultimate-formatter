@@ -25,71 +25,35 @@ class ConfigReader
 
     /**
      * @param string $projectPath
-     * @param string $section
-     * @param string $key
      *
-     * @return array<int, string>
+     * @return FormatterConfig
      */
-    public function arguments(string $projectPath, string $section, string $key): array
+    public function forProject(string $projectPath): FormatterConfig
     {
-        $arguments = $this->value($projectPath, $section, $key);
-        if (is_array($arguments) === false) {
-            throw new UnexpectedValueException("Config ultimate-formatter.{$section}.{$key} must be a list of arguments.");
-        }
-
-        return collect($arguments)
-            ->map(fn(mixed $argument): string => is_string($argument)
-                ? $argument
-                : throw new UnexpectedValueException("Config ultimate-formatter.{$section}.{$key} must contain only strings."))
-            ->values()
-            ->all();
+        return $this->forConfigFile($this->publishedConfigFile($projectPath));
     }
 
     /**
-     * @param string $projectPath
-     * @param string $section
-     * @param string $key
+     * @param string $publishedConfigFile
      *
-     * @return bool
+     * @return FormatterConfig
      */
-    public function flag(string $projectPath, string $section, string $key): bool
+    public function forConfigFile(string $publishedConfigFile): FormatterConfig
     {
-        $flag = $this->value($projectPath, $section, $key);
-        if (is_bool($flag) === false) {
-            throw new UnexpectedValueException("Config ultimate-formatter.{$section}.{$key} must be a boolean.");
-        }
-
-        return $flag;
+        return new FormatterConfig($publishedConfigFile, $this->load($publishedConfigFile), $this->load(self::DEFAULT_CONFIG_FILE));
     }
 
     /**
-     * A key the published config leaves out keeps its default, so an older config still runs every tool.
+     * The binary and PHPStan both run without booting Laravel, so the config file is read directly.
      *
-     * @param string $projectPath
-     * @param string $section
-     * @param string $key
-     *
-     * @return mixed
-     */
-    public function value(string $projectPath, string $section, string $key): mixed
-    {
-        $publishedSection = $this->publishedSection($this->publishedConfigFile($projectPath), $section);
-        $defaultSection = $this->defaultSection($section);
-
-        return $this->entry($publishedSection, $key) ?? $this->entry($defaultSection, $key);
-    }
-
-    /**
      * @param string $configFile
-     * @param string $section
      *
-     * @return mixed
+     * @return array<array-key, mixed>
      */
-    public function publishedSection(string $configFile, string $section): mixed
+    protected function load(string $configFile): array
     {
-        // The binary and PHPStan both run without booting Laravel, so the config file is read directly.
         if (is_file($configFile) === false) {
-            return null;
+            return [];
         }
 
         $config = require $configFile;
@@ -97,27 +61,6 @@ class ConfigReader
             throw new UnexpectedValueException("{$configFile} must return an array.");
         }
 
-        return $config[$section] ?? null;
-    }
-
-    /**
-     * @param string $section
-     *
-     * @return mixed
-     */
-    public function defaultSection(string $section): mixed
-    {
-        return $this->publishedSection(self::DEFAULT_CONFIG_FILE, $section);
-    }
-
-    /**
-     * @param mixed $section
-     * @param string $key
-     *
-     * @return mixed
-     */
-    protected function entry(mixed $section, string $key): mixed
-    {
-        return is_array($section) ? $section[$key] ?? null : null;
+        return $config;
     }
 }

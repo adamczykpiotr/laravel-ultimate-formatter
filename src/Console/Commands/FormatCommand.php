@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Console\Commands;
 
 use AdamczykPiotr\UltimateFormatter\Config\ConfigReader;
+use AdamczykPiotr\UltimateFormatter\Config\FormatterConfig;
+use AdamczykPiotr\UltimateFormatter\Console\ArtisanStep;
 use AdamczykPiotr\UltimateFormatter\Console\ProjectLayout;
+use AdamczykPiotr\UltimateFormatter\Console\RunMode;
 use AdamczykPiotr\UltimateFormatter\Console\Tool;
+use AdamczykPiotr\UltimateFormatter\Console\ToolRun;
 use AdamczykPiotr\UltimateFormatter\Console\ToolRunner;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -46,32 +50,36 @@ class FormatCommand extends FormatterCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $path = $this->projectPath($input);
-        $artisanSteps = [
-            'clear-cache' => $this->configReader->flag($path, 'pre', 'clear-cache'),
-            'migrate' => $this->configReader->flag($path, 'pre', 'migrate'),
-            'ide-helper' => $input->getOption('models') === true,
-        ];
+        $config = $this->configReader->forProject($path);
+        $models = $input->getOption('models') === true;
 
-        $enabledSteps = collect($artisanSteps)->filter()->keys();
+        $artisanSteps = collect(ArtisanStep::cases())
+            ->filter(fn(ArtisanStep $step): bool => $step->hasPreFlag() ? $config->runsBeforeFormat($step) : $models);
 
         // A package has no artisan to run them with, so Rector and the fixer still run without them.
-        if ($enabledSteps->isNotEmpty() && ProjectLayout::detect($path) !== ProjectLayout::APP) {
-            $output->writeln("<comment>Skipped {$enabledSteps->implode(', ')}, the project has no artisan.</comment>");
-            $enabledSteps = $enabledSteps->take(0);
+        if ($artisanSteps->isNotEmpty() && ProjectLayout::detect($path) !== ProjectLayout::APP) {
+            $skippedSteps = $artisanSteps->map(fn(ArtisanStep $step): string => $step->configKey())->implode(', ');
+            $output->writeln("<comment>Skipped {$skippedSteps}, the project has no artisan.</comment>");
+            $artisanSteps = $artisanSteps->take(0);
         }
 
-        foreach ($enabledSteps as $step) {
-            $artisanExitCode = $this->toolRunner->run(Tool::ARTISAN, $this->configReader->arguments($path, 'format', $step), $path, $output);
-            if ($artisanExitCode !== self::SUCCESS) {
-                return $artisanExitCode;
-            }
-        }
+        $runs = $artisanSteps
+            ->map(fn(ArtisanStep $step): ToolRun => new ToolRun(Tool::ARTISAN, $config->artisanArguments($step)))
+            ->push($this->toolRun($config, Tool::RECTOR))
+            ->push($this->toolRun($config, Tool::PHP_CS_FIXER))
+            ->values();
 
-        $rectorExitCode = $this->toolRunner->run(Tool::RECTOR, $this->configReader->arguments($path, 'format', 'rector'), $path, $output);
-        if ($rectorExitCode !== self::SUCCESS) {
-            return $rectorExitCode;
-        }
+        return $this->toolRunner->runInOrder($runs, $path, $output);
+    }
 
-        return $this->toolRunner->run(Tool::PHP_CS_FIXER, $this->configReader->arguments($path, 'format', 'php-cs-fixer'), $path, $output);
+    /**
+     * @param FormatterConfig $config
+     * @param Tool $tool
+     *
+     * @return ToolRun
+     */
+    protected function toolRun(FormatterConfig $config, Tool $tool): ToolRun
+    {
+        return new ToolRun($tool, $config->toolArguments(RunMode::FORMAT, $tool));
     }
 }
