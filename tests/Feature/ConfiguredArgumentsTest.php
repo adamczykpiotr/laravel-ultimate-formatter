@@ -64,7 +64,7 @@ class ConfiguredArgumentsTest extends TestCase
     {
         $this->publishConfig("['check' => ['rector' => ['process']]]");
 
-        $this->assertSame('fix --quiet', $this->resolveArguments('format.php-cs-fixer'));
+        $this->assertSame('fix --show-progress=none', $this->resolveArguments('format.php-cs-fixer'));
     }
 
     /**

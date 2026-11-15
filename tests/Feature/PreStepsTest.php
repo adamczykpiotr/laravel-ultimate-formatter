@@ -7,6 +7,7 @@ namespace AdamczykPiotr\UltimateFormatter\Tests\Feature;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\CheckCommand;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\FormatCommand;
 use AdamczykPiotr\UltimateFormatter\Tests\TestCase;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Filesystem\Filesystem;
 use UnexpectedValueException;
@@ -95,6 +96,41 @@ class PreStepsTest extends TestCase
 
         $this->assertSame(2, $exitCode);
         $this->assertSame("migrate --force\n", $this->filesystem->readFile("{$this->projectPath}/artisan.log"));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_quiet_silences_every_step(): void
+    {
+        $this->publishConfig("['pre' => ['migrate' => true]]");
+
+        $tester = new CommandTester(new FormatCommand());
+        $tester->execute(['--path' => $this->projectPath, '--models' => true], ['verbosity' => OutputInterface::VERBOSITY_QUIET]);
+
+        $this->assertSame(
+            "migrate --force --quiet\nide-helper:models --reset --write --quiet\n",
+            $this->filesystem->readFile("{$this->projectPath}/artisan.log"),
+        );
+        $this->assertSame('', $tester->getDisplay());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_verbose_passes_its_level_on_and_prints_each_command(): void
+    {
+        $this->publishConfig("['pre' => ['clear-cache' => true]]");
+
+        $tester = new CommandTester(new FormatCommand());
+        $tester->execute(['--path' => $this->projectPath, '--models' => true], ['verbosity' => OutputInterface::VERBOSITY_VERY_VERBOSE]);
+
+        $this->assertSame(
+            "optimize:clear -vv\nide-helper:models --reset --write -vv\n",
+            $this->filesystem->readFile("{$this->projectPath}/artisan.log"),
+        );
+        $this->assertStringContainsString('> php artisan ide-helper:models --reset --write -vv', $tester->getDisplay());
+        $this->assertStringContainsString('> php vendor/bin/rector process --no-progress-bar --no-diffs -vv', $tester->getDisplay());
     }
 
     /**
