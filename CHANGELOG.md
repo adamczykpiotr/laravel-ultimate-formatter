@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.2](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.1...v1.13.2) (2026-11-15)
+
+
+### Bug Fixes
+
+* migrate pre-1.13 configs, and run migrate-config without a composer script ([#43](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/43)) ([e0324a0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/e0324a0353bdf49579ae07a0833f6351b788064b))
+
 ## [1.13.1](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.0...v1.13.1) (2026-11-15)
 
 
