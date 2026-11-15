@@ -42,9 +42,10 @@ class ConfigMigrator
     {
         $filesystem = new Filesystem();
         $lines = explode("\n", $filesystem->readFile($configFile));
-        $fromVersion = $this->publishedVersion($lines);
+        $isVersioned = $this->publishedVersion($lines) !== null;
+        $fromVersion = $this->publishedVersion($lines) ?? $this->unversionedVersion($lines);
         $toVersion = $this->latestVersion();
-        if (version_compare($fromVersion, $toVersion, '>=')) {
+        if ($isVersioned && version_compare($fromVersion, $toVersion, '>=')) {
             return new ConfigMigration($fromVersion, $fromVersion);
         }
 
@@ -95,13 +96,50 @@ class ConfigMigrator
     /**
      * @param list<string> $lines
      *
-     * @return string
+     * @return string|null
      */
-    protected function publishedVersion(array $lines): string
+    protected function publishedVersion(array $lines): string|null
     {
         $versionLine = collect($lines)->first(fn(string $line): bool => preg_match(self::VERSION_PATTERN, $line) === 1);
 
-        return is_string($versionLine) ? Str::match(self::VERSION_PATTERN, $versionLine) : self::INITIAL_VERSION;
+        return is_string($versionLine) ? Str::match(self::VERSION_PATTERN, $versionLine) : null;
+    }
+
+    /**
+     * A config published before config-version existed is dated by its keys: the newest release whose added keys are
+     * all there, so every later diff still applies to it.
+     *
+     * @param list<string> $lines
+     *
+     * @return string
+     */
+    protected function unversionedVersion(array $lines): string
+    {
+        $publishedKeys = collect($lines)->map(fn(string $line): string|null => $this->key($line))->filter()->values();
+
+        return $this->versions()
+            ->filter(function (string $version) use ($publishedKeys): bool {
+                $addedKeys = $this->addedKeys("{$this->diffsDirectory}/{$version}.diff");
+
+                return $addedKeys !== [] && collect($addedKeys)->diff($publishedKeys)->isEmpty();
+            })
+            ->last() ?? self::INITIAL_VERSION;
+    }
+
+    /**
+     * @param string $diffFile
+     *
+     * @return list<string>
+     */
+    protected function addedKeys(string $diffFile): array
+    {
+        $lines = collect($this->hunks($diffFile))->flatMap(fn(array $hunk): array => $hunk);
+        $keysOf = fn(string $operation): Collection => $lines
+            ->filter(fn(array $line): bool => $line[0] === $operation)
+            ->map(fn(array $line): string|null => $this->key($line[1]))
+            ->filter();
+
+        return array_values($keysOf('+')->diff($keysOf('-'))->unique()->all());
     }
 
     /**
@@ -258,6 +296,11 @@ class ConfigMigrator
         $isEdited = trim($publishedLine) !== trim($oldDefault);
 
         if ($oldKey !== null && $oldKey === $newKey) {
+            // A config dated by its keys can already hold a later default.
+            if (trim($publishedLine) === trim($newDefault)) {
+                return [[$publishedLine], []];
+            }
+
             if ($isEdited) {
                 $newValue = $this->value($newDefault);
 

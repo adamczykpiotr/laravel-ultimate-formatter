@@ -150,9 +150,11 @@ on every run, so a change takes effect without clearing its cache.
 `config/ultimate-formatter.php` is yours once it is published, so each release that changes the default
 config ships the change as `config/diffs/{version}.diff`, and `migrate-config` replays the diffs newer than
 the `config-version` your file records. It matches each change by its lines and keys rather than by line
-number, keeps your values and comments, and prints what it changed. It runs after every `composer update`
-through the `post-update-cmd` script that `install` adds. Run it by hand with `--dry-run` to see the changes
-first:
+number, keeps your values and comments, and prints what it changed. It runs after every `composer install`
+and `composer update`, once `artisan package:discover` finishes, so a Laravel app needs no script for it. The
+`post-update-cmd` script that `install` adds covers apps that removed `package:discover` from their
+`post-autoload-dump`. A config published before 1.12, which has no `config-version`, is dated by the keys it
+holds. Run it by hand with `--dry-run` to see the changes first:
 
 ```bash
 vendor/bin/ultimate-formatter migrate-config --dry-run

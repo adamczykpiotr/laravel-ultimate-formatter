@@ -1,0 +1,7 @@
+--- a/config/ultimate-formatter.php
++++ b/config/ultimate-formatter.php
+@@ -14,3 +14,3 @@
+         'rector' => ['process', '--no-progress-bar', '--no-diffs'],
+-        'php-cs-fixer' => ['fix', '--quiet'],
++        'php-cs-fixer' => ['fix', '--show-progress=none'],
+     ],
