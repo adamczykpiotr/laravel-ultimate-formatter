@@ -157,7 +157,6 @@ class ConfigMigrator
             $versionLines[] = '';
         }
 
-        // splice() edits in place, so it works on a copy to leave the caller's lines alone.
         $versionedLines = $lines->values();
         $versionedLines->splice($returnLine + 1, 0, $versionLines);
 
@@ -252,7 +251,6 @@ class ConfigMigrator
         }
 
         $messages = [...$messages, ...$this->removalMessages(collect($removedLines)->slice($pairedCount))];
-        // splice() edits in place, so it works on a copy to leave the caller's lines alone.
         $patchedLines = $lines->values();
         $patchedLines->splice($start, $offset, $newLines);
 
