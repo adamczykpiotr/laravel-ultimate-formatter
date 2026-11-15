@@ -11,7 +11,9 @@ use PhpCsFixer\Fixer\DeprecatedFixerInterface;
 use PhpCsFixer\Fixer\FixerInterface;
 use PhpCsFixer\FixerFactory;
 use PhpCsFixer\RuleSet\RuleSet;
+use PhpCsFixer\Tokenizer\Tokens;
 use PHPUnit\Framework\TestCase;
+use SplFileInfo;
 
 class FixerConfigFactoryTest extends TestCase
 {
@@ -58,6 +60,53 @@ class FixerConfigFactoryTest extends TestCase
             ->map(fn(FixerInterface $fixer): string => $fixer->getName());
 
         $this->assertSame([], $deprecatedFixers->values()->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_never_enables_fixers_that_conflict_with_the_standard(): void
+    {
+        $fixerFactory = new FixerFactory();
+        $fixerFactory->registerBuiltInFixers();
+        $fixerFactory->registerCustomFixers(FixerConfigFactory::customFixers());
+        $fixerFactory->useRuleSet(new RuleSet(FixerConfigFactory::rules()));
+
+        $enabledFixers = collect($fixerFactory->getFixers())
+            ->map(fn(FixerInterface $fixer): string => $fixer->getName());
+
+        // All traits go in one `use` statement.
+        $this->assertNotContains('single_trait_insert_per_statement', $enabledFixers);
+        // Separates years and ports too; UltimateFormatter/numeric_literal_separator replaces it.
+        $this->assertNotContains('numeric_literal_separator', $enabledFixers);
+    }
+
+    /**
+     * @return void
+     */
+    public function test_sorts_traits_into_one_statement_first_in_the_class(): void
+    {
+        $fixerFactory = new FixerFactory();
+        $fixerFactory->registerBuiltInFixers();
+        $fixerFactory->registerCustomFixers(FixerConfigFactory::customFixers());
+        $fixerFactory->useRuleSet(new RuleSet([
+            'UltimateFormatter/single_trait_use_statement' => true,
+            'ordered_traits' => FixerConfigFactory::rules()['ordered_traits'],
+            'ordered_class_elements' => FixerConfigFactory::rules()['ordered_class_elements'],
+        ]));
+
+        Tokens::clearCache();
+        $tokens = Tokens::fromCode(
+            "<?php\nclass Tag\n{\n    use SoftDeletes;\n    public const TYPE = 'tag';\n    use Notifiable, HasFactory;\n    public function name(): string\n    {\n        return 'tag';\n    }\n}\n",
+        );
+        foreach ($fixerFactory->getFixers() as $fixer) {
+            $fixer->fix(new SplFileInfo(__FILE__), $tokens);
+        }
+
+        $this->assertSame(
+            "<?php\nclass Tag\n{\n    use HasFactory, Notifiable, SoftDeletes;\n    public const TYPE = 'tag';\n    public function name(): string\n    {\n        return 'tag';\n    }\n}\n",
+            $tokens->generateCode(),
+        );
     }
 
     /**

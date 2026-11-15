@@ -21,6 +21,10 @@
             <exclude>tests/PhpStan/Fixture</exclude>
         </testsuite>
     </testsuites>
+    <php>
+        <!-- The full Rector config, with the Laravel sets, outgrows PHP's default 128M. -->
+        <ini name="memory_limit" value="1G"/>
+    </php>
     <logging>
         <junit outputFile="build/report.junit.xml"/>
     </logging>

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\PhpCsFixer;
 
 use AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers\BlankLineAfterBannerCommentFixer;
+use AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers\NumericLiteralSeparatorFixer;
+use AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers\SingleTraitUseStatementFixer;
 use Fidry\CpuCoreCounter\CpuCoreCounter;
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
@@ -51,6 +53,8 @@ class FixerConfigFactory
     {
         return [
             new BlankLineAfterBannerCommentFixer(),
+            new NumericLiteralSeparatorFixer(),
+            new SingleTraitUseStatementFixer(),
         ];
     }
 
@@ -61,6 +65,10 @@ class FixerConfigFactory
     {
         // `no_superfluous_phpdoc_tags`, `phpdoc_no_empty_return` and `phpdoc_summary` stay off:
         // every method keeps @param/@return even when native types cover them.
+        // `single_trait_insert_per_statement` stays off: UltimateFormatter/single_trait_use_statement
+        // does the opposite and puts all traits in one `use` statement.
+        // `numeric_literal_separator` is replaced by UltimateFormatter/numeric_literal_separator,
+        // which leaves hex, octal, binary and exponent literals alone.
         return [
             'phpdoc_add_missing_param_annotation' => ['only_untyped' => false],
             'phpdoc_align' => ['align' => 'left'],
@@ -145,6 +153,9 @@ class FixerConfigFactory
             'return_type_declaration' => ['space_before' => 'none'],
             'modifier_keywords' => ['elements' => ['const', 'method', 'property']],
 
+            'UltimateFormatter/single_trait_use_statement' => true,
+            'ordered_traits' => true,
+            'ordered_class_elements' => ['order' => ['use_trait']],
             'class_attributes_separation' => [
                 'elements' => [
                     'const' => 'none',
@@ -170,6 +181,7 @@ class FixerConfigFactory
 
             'single_line_comment_style' => ['comment_types' => ['hash']],
             'UltimateFormatter/blank_line_after_banner_comment' => true,
+            'UltimateFormatter/numeric_literal_separator' => true,
             'declare_strict_types' => true,
         ];
     }
