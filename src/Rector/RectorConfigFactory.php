@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Rector;
 
+use AdamczykPiotr\UltimateFormatter\Rector\Rules\ArrayKeyExistsTernaryToCoalesceRector;
+use AdamczykPiotr\UltimateFormatter\Rector\Rules\ConcatToInterpolationRector;
 use AdamczykPiotr\UltimateFormatter\Rector\Rules\ExpandNullableDocblockTypesRector;
+use AdamczykPiotr\UltimateFormatter\Rector\Rules\ExplicitNullFalseComparisonRector;
+use AdamczykPiotr\UltimateFormatter\Rector\Rules\FactoryAttributeKeysToConstantsRector;
+use AdamczykPiotr\UltimateFormatter\Rector\Rules\ForeachNestedIfsToEarlyContinueRector;
+use AdamczykPiotr\UltimateFormatter\Rector\Rules\GroupTraitUsesRector;
 use AdamczykPiotr\UltimateFormatter\Rector\Rules\NormalizeMethodDocblockRector;
+use AdamczykPiotr\UltimateFormatter\Rector\Rules\RenameGenericForeachValueVariableRector;
 use AdamczykPiotr\UltimateFormatter\Rector\Rules\SingleLineClosureToArrowFunctionRector;
 use Composer\InstalledVersions;
 use Rector\Config\RectorConfig;
@@ -78,6 +85,13 @@ class RectorConfigFactory
             ClassPropertyAssignToConstructorPromotionRector::class,
             ChangeSwitchToMatchRector::class,
             SingleLineClosureToArrowFunctionRector::class,
+            ExplicitNullFalseComparisonRector::class,
+            ConcatToInterpolationRector::class,
+            GroupTraitUsesRector::class,
+            FactoryAttributeKeysToConstantsRector::class,
+            ForeachNestedIfsToEarlyContinueRector::class,
+            RenameGenericForeachValueVariableRector::class,
+            ArrayKeyExistsTernaryToCoalesceRector::class,
         ];
     }
 

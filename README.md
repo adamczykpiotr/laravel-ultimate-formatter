@@ -190,6 +190,20 @@ Rector runs 4 parallel processes by default to stay within container memory limi
   such as `non-empty-string` or `list<string>` are kept. `?string` in a tag becomes `string|null`.
 - **Banner comments.** A `/* | Section | */` banner is always followed by a blank line, via the
   custom `UltimateFormatter/blank_line_after_banner_comment` fixer.
+- **Laravel style rules.** Custom Rector rules that only rewrite cases where the result is certain:
+  - `!$x` becomes `$x === false` for booleans and `$x === null` for nullable objects. Strings, ints
+    and mixed values are left alone.
+  - Single-line concatenations of strings and plain variable, property or array reads become
+    interpolation. Chains that include a call or a constant are left for you to extract a variable.
+  - All `use Trait;` statements are merged into one alphabetically ordered statement at the top of
+    the class.
+  - `array_key_exists($k, $a) ? $a[$k] : $default` becomes `$a[$k] ?? $default`.
+  - A `foreach` whose body is two or more nested `if`s without `else` becomes early `continue` guards.
+  - A generic foreach value name (`$item`, `$value`, `$row`, ...) becomes the singular of the
+    iterated variable (`$users` gives `$user`), unless that name is taken or the old one is used
+    outside the loop.
+  - String keys in factory `definition()`, `state()`, `make()` and `create()` arrays become the
+    model's `ATTRIBUTE_*` constant when exactly one constant has that value.
 
 ### PHPStan ruleset
 
