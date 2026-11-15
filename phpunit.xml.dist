@@ -18,9 +18,16 @@
     <testsuites>
         <testsuite name="AdamczykPiotr Test Suite">
             <directory>tests</directory>
+            <exclude>tests/Drift/Fixture</exclude>
             <exclude>tests/PhpStan/Fixture</exclude>
         </testsuite>
     </testsuites>
+    <groups>
+        <!-- The drift checks pin the output of the latest allowed upstream versions, so they run on their own: composer test:drift. -->
+        <exclude>
+            <group>drift</group>
+        </exclude>
+    </groups>
     <php>
         <!-- The full Rector config, with the Laravel sets, outgrows PHP's default 128M. -->
         <ini name="memory_limit" value="1G"/>

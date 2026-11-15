@@ -8,6 +8,7 @@ parameters:
         - src
         - tests
     excludePaths:
+        - tests/Drift/Fixture
         - tests/PhpStan/Fixture
     tmpDir: build/phpstan
     checkOctaneCompatibility: true

@@ -1,0 +1,137 @@
+name: upstream-drift
+
+# Rector, PHP CS Fixer and PHPStan change rule behaviour in minor releases, and composer.lock isn't committed,
+# so every run resolves the latest allowed versions. The job formats the golden fixture and dumps the
+# resolved rules, then fails with a diff when either no longer matches what is committed.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UPSTREAM_PACKAGES: >-
+    rector/rector
+    driftingly/rector-laravel
+    friendsofphp/php-cs-fixer
+    phpstan/phpstan
+    larastan/larastan
+    phpat/phpat
+    spaze/phpstan-disallowed-calls
+    laravel/framework
+
+jobs:
+  upstream-drift:
+    name: upstream-drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install the latest allowed versions
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Show upstream versions
+        run: |
+          mkdir -p build
+          for package in $UPSTREAM_PACKAGES; do
+            echo "$package $(composer show "$package" --format=json | jq -r '.versions[0]')"
+          done | tee build/versions.txt
+
+      - name: Regenerate the fixture and the rule snapshot
+        run: composer fixtures:update
+
+      - name: Compare with the committed fixture and snapshot
+        run: |
+          git add --intent-to-add --all tests/Drift
+          if git diff --quiet -- tests/Drift; then
+            echo 'The formatted fixture and the resolved rules match what is committed.'
+            exit 0
+          fi
+
+          git diff -- tests/Drift | tee build/drift.diff
+          {
+            echo '## Upstream drift'
+            echo
+            echo 'The formatter output or the resolved rules changed. Review the diff, then run `composer fixtures:update` and commit the result, or fix the regression.'
+            echo
+            echo '```'
+            cat build/versions.txt
+            echo '```'
+            echo
+            echo '```diff'
+            cat build/drift.diff
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Open or update the tracking issue
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          LABEL: upstream-drift
+        run: |
+          {
+            echo "The weekly upstream drift check failed: $RUN_URL"
+            echo
+            echo 'Review the diff, then run `composer fixtures:update` and commit the result, or fix the regression.'
+            echo
+            echo '### Versions'
+            echo
+            echo '```'
+            cat build/versions.txt 2>/dev/null || echo 'Not collected, the install failed.'
+            echo '```'
+            echo
+            echo '### Diff'
+            echo
+            if [ -s build/drift.diff ]; then
+              echo '```diff'
+              # An issue body holds at most 65536 characters.
+              head -c 50000 build/drift.diff
+              echo '```'
+              echo
+              echo "The full diff is in the run summary."
+            else
+              echo 'No diff: the fixture or the snapshot could not be regenerated, see the run log.'
+            fi
+            echo
+            echo '### Changelogs'
+            echo
+            echo '- [rector/rector](https://github.com/rectorphp/rector/releases)'
+            echo '- [driftingly/rector-laravel](https://github.com/driftingly/rector-laravel/releases)'
+            echo '- [friendsofphp/php-cs-fixer](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/blob/master/CHANGELOG.md)'
+            echo '- [phpstan/phpstan](https://github.com/phpstan/phpstan/releases)'
+            echo '- [larastan/larastan](https://github.com/larastan/larastan/releases)'
+            echo '- [phpat/phpat](https://github.com/carlosas/phpat/releases)'
+            echo '- [spaze/phpstan-disallowed-calls](https://github.com/spaze/phpstan-disallowed-calls/releases)'
+          } > build/issue.md
+
+          number=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -z "$number" ]; then
+            gh label create "$LABEL" --color D93F0B --description 'Upstream rule changes found by the weekly drift check' --force
+            gh issue create --title 'Upstream drift: formatter output or resolved rules changed' --label "$LABEL" --body-file build/issue.md
+          else
+            gh issue edit "$number" --body-file build/issue.md
+            gh issue comment "$number" --body "Still drifting: $RUN_URL"
+          fi

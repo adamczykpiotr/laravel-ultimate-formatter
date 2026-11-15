@@ -62,6 +62,11 @@
         "check": "@php bin/ultimate-formatter check",
         "format": "@php bin/ultimate-formatter format",
         "test": "vendor/bin/phpunit",
+        "test:drift": "vendor/bin/phpunit --group drift",
+        "fixtures:update": [
+            "@putenv UPDATE_FIXTURES=1",
+            "@test:drift"
+        ],
         "test-coverage": "vendor/bin/phpunit --coverage-html build/coverage"
     },
     "config": {
