@@ -32,6 +32,11 @@ class CheckCommandTest extends TestCase
                 <?php
                 $tool = basename(__FILE__);
                 if (($argv[1] ?? null) === 'dump-parameters') {
+                    // Like PHPStan, print nothing under the quiet verbosity Symfony Console exports.
+                    if (getenv('SHELL_VERBOSITY') === '-1') {
+                        exit(0);
+                    }
+
                     $parameters = @file_get_contents(dirname(__DIR__, 2) . '/phpstan-parameters.json');
                     if ($parameters === 'invalid') {
                         fwrite(STDERR, 'Invalid configuration: disallowedFunctionCalls is unexpected.');
@@ -52,6 +57,8 @@ class CheckCommandTest extends TestCase
      */
     protected function tearDown(): void
     {
+        putenv('SHELL_VERBOSITY');
+        unset($_ENV['SHELL_VERBOSITY'], $_SERVER['SHELL_VERBOSITY']);
         $this->filesystem->remove($this->projectPath);
 
         parent::tearDown();
@@ -167,6 +174,21 @@ class CheckCommandTest extends TestCase
         $this->assertFileDoesNotExist("{$this->projectPath}/tools.log");
         $this->assertStringContainsString('PHPStan could not load phpstan.neon', $tester->getDisplay());
         $this->assertStringContainsString('disallowedFunctionCalls is unexpected', $tester->getDisplay());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_finds_the_ruleset_when_run_quietly(): void
+    {
+        $this->filesystem->touch("{$this->projectPath}/phpstan.neon");
+        // Symfony Console exports -q this way, and the PHPStan process inherits it.
+        putenv('SHELL_VERBOSITY=-1');
+        $_ENV['SHELL_VERBOSITY'] = -1;
+        $_SERVER['SHELL_VERBOSITY'] = -1;
+
+        $this->assertSame(Command::SUCCESS, $this->runCheck());
+        $this->assertSame("rector\nphp-cs-fixer\nphpstan\n", $this->filesystem->readFile("{$this->projectPath}/tools.log"));
     }
 
     /**
