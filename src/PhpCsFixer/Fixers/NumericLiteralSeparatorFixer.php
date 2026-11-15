@@ -138,6 +138,12 @@ class NumericLiteralSeparatorFixer implements FixerInterface
         }
 
         $target = $tokens->getPrevMeaningfulToken($boundary);
+
+        // `$row['parent_id'] = 10001` is named by its key.
+        if ($target !== null && $tokens[$target]->equals(']')) {
+            $target = $tokens->getPrevMeaningfulToken($target);
+        }
+
         if ($target === null || $tokens[$target]->isGivenKind([T_VARIABLE, T_STRING, T_CONSTANT_ENCAPSED_STRING, CT::T_NAMED_ARGUMENT_NAME]) === false) {
             return [];
         }
@@ -218,13 +224,23 @@ class NumericLiteralSeparatorFixer implements FixerInterface
      */
     protected function words(string $name): Collection
     {
-        // All-caps names (`FIRST_YEAR`) would otherwise split into single letters.
-        $normalized = Str::upper($name) === $name ? Str::lower($name) : $name;
-
-        return Str::of(Str::snake($normalized))
+        // Capital runs (`FIRST_YEAR`, `EdielID`) would otherwise split into single letters.
+        return Str::of($name)
+            ->replaceMatches('/[A-Z]+(?=[A-Z][a-z]|[^A-Za-z]|$)/', $this->capitalize(...))
+            ->snake()
             ->explode('_')
             ->filter()
             ->values();
+    }
+
+    /**
+     * @param array<int, string> $match
+     *
+     * @return string
+     */
+    protected function capitalize(array $match): string
+    {
+        return Str::ucfirst(Str::lower($match[0]));
     }
 
     /**

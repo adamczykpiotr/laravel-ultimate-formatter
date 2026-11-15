@@ -78,6 +78,8 @@ class NumericLiteralSeparatorFixerTest extends TestCase
         yield 'bare id' => ['$id = 10001;'];
         yield 'list of ids' => ['new Job(precinctIds: [5757, 10001]);'];
         yield 'nested list of ids' => ['$ids = [[10001, 10002], [10003]];'];
+        yield 'acronym id' => ["\$row = ['EdielID' => 11111];"];
+        yield 'assignment to an id key' => ["\$json['form']['current_revision_id'] = 999999;"];
         yield 'snake case id' => ["\$row = ['cbdg_id' => 10001];"];
         yield 'named argument with year' => ['new Borehole(drillingYear: 1990);'];
         yield 'year in an expression' => ['new Borehole(documentationYear: 2000 + $index);'];
@@ -111,6 +113,8 @@ class NumericLiteralSeparatorFixerTest extends TestCase
     public static function provideQuantities(): Iterator
     {
         yield 'name merely containing id' => ['$validUntil = 3600;', '$validUntil = 3_600;'];
+        yield 'acronym id followed by a word' => ['$userIDCount = 1000;', '$userIDCount = 1_000;'];
+        yield 'assignment to a quantity key' => ["\$limits['max_size'] = 1000;", "\$limits['max_size'] = 1_000;"];
         yield 'grid size' => ['$grid = 1000;', '$grid = 1_000;'];
         yield 'srid' => ['$srid = 4326;', '$srid = 4_326;'];
         yield 'positional argument' => ['ST::transform($point, 4326);', 'ST::transform($point, 4_326);'];

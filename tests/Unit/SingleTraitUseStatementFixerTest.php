@@ -70,6 +70,26 @@ class SingleTraitUseStatementFixerTest extends TestCase
             "<?php\nclass Tag\n{\n    use A; \n    use /* needed for x */ B;\n}\n",
         ];
 
+        yield 'moves a docblock of a later statement above the merged one' => [
+            "<?php\nclass Field\n{\n    use EmitsLegacyWireKeys;\n    use DateSerializationTrait;\n\n    /** @use HasFactory<FieldFactory> */\n    use HasFactory;\n\n    use RevisionedRow;\n}\n",
+            "<?php\nclass Field\n{\n    /** @use HasFactory<FieldFactory> */\n    use EmitsLegacyWireKeys, DateSerializationTrait, HasFactory, RevisionedRow;\n}\n",
+        ];
+
+        yield 'keeps the docblock of the first statement' => [
+            "<?php\nclass Field\n{\n    /** @use HasFactory<FieldFactory> */\n    use HasFactory;\n    use RevisionedRow;\n}\n",
+            "<?php\nclass Field\n{\n    /** @use HasFactory<FieldFactory> */\n    use HasFactory, RevisionedRow;\n}\n",
+        ];
+
+        yield 'combines docblocks of several statements' => [
+            "<?php\nclass Field\n{\n    /** @use HasFactory<FieldFactory> */\n    use HasFactory;\n    /** @use HasTags<Tag> */\n    use HasTags;\n}\n",
+            "<?php\nclass Field\n{\n    /**\n     * @use HasFactory<FieldFactory>\n     * @use HasTags<Tag>\n     */\n    use HasFactory, HasTags;\n}\n",
+        ];
+
+        yield 'skips a plain comment above a statement' => [
+            "<?php\nclass Tag\n{\n    use A;\n    // needed for x\n    use B;\n}\n",
+            "<?php\nclass Tag\n{\n    use A;\n    // needed for x\n    use B;\n}\n",
+        ];
+
         yield 'leaves namespace imports alone' => [
             "<?php\nuse App\\A;\nuse App\\B;\nclass Tag\n{\n    use A;\n    use B;\n}\n",
             "<?php\nuse App\\A;\nuse App\\B;\nclass Tag\n{\n    use A, B;\n}\n",

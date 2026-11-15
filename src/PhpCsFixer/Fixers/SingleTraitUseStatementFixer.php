@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers;
 
+use Illuminate\Support\Str;
 use PhpCsFixer\Fixer\FixerInterface;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
@@ -61,11 +62,15 @@ class SingleTraitUseStatementFixer implements FixerInterface
             $ranges = [];
             foreach ($starts as $start) {
                 $range = $this->simpleStatementRange($tokens, $start);
-                if ($range === null) {
+                $comments = $this->leadingComments($tokens, $start);
+
+                // Only a lone docblock, such as `@use HasFactory<UserFactory>`, can move along with its statement.
+                $movableComments = $comments === [] || (count($comments) === 1 && $tokens[$comments[0]]->isGivenKind(T_DOC_COMMENT));
+                if ($range === null || $movableComments === false) {
                     continue 2;
                 }
 
-                $ranges[] = $range;
+                $ranges[] = [$comments[0] ?? null, ...$range];
             }
 
             $this->merge($tokens, $ranges);
@@ -136,23 +141,49 @@ class SingleTraitUseStatementFixer implements FixerInterface
 
     /**
      * @param Tokens<Token> $tokens
-     * @param list<array{int, int}> $ranges
+     * @param int $start
+     *
+     * @return list<int>
+     */
+    protected function leadingComments(Tokens $tokens, int $start): array
+    {
+        $comments = [];
+        $index = $tokens->getPrevNonWhitespace($start);
+        while ($index !== null && $tokens[$index]->isComment()) {
+            $comments[] = $index;
+            $index = $tokens->getPrevNonWhitespace($index);
+        }
+
+        return $comments;
+    }
+
+    /**
+     * @param Tokens<Token> $tokens
+     * @param list<array{int|null, int, int}> $ranges
      *
      * @return void
      */
     protected function merge(Tokens $tokens, array $ranges): void
     {
         $names = collect($ranges)
-            ->flatMap(fn(array $range): array => $this->names($tokens, ...$range))
+            ->flatMap(fn(array $range): array => $this->names($tokens, $range[1], $range[2]))
             ->all();
 
-        // Later statements first, so the first statement's indexes stay put until it is rewritten.
-        foreach (array_reverse(array_slice($ranges, 1)) as [$start, $end]) {
-            $tokens->clearRange($start, $end);
-            $tokens->removeLeadingWhitespace($start);
+        $docblocks = [];
+        foreach ($ranges as [$docblock]) {
+            if ($docblock !== null) {
+                $docblocks[] = $tokens[$docblock]->getContent();
+            }
         }
 
-        [$firstStart, $firstEnd] = $ranges[0];
+        // Later statements first, so the first statement's indexes stay put until it is rewritten.
+        foreach (array_reverse(array_slice($ranges, 1)) as [$docblock, $start, $end]) {
+            $from = $docblock ?? $start;
+            $tokens->clearRange($from, $end);
+            $tokens->removeLeadingWhitespace($from);
+        }
+
+        [$firstDocblock, $firstStart, $firstEnd] = $ranges[0];
         $merged = [new Token([CT::T_USE_TRAIT, 'use']), new Token([T_WHITESPACE, ' '])];
         foreach ($names as $position => $name) {
             if ($position > 0) {
@@ -166,6 +197,53 @@ class SingleTraitUseStatementFixer implements FixerInterface
         $merged[] = new Token(';');
 
         $tokens->overrideRange($firstStart, $firstEnd, $merged);
+        $this->placeDocblock($tokens, $firstDocblock, $firstStart, $docblocks);
+    }
+
+    /**
+     * PHPStan reads only the docblock right above a statement, so every `@use` tag has to end up in that one.
+     *
+     * @param Tokens<Token> $tokens
+     * @param int|null $firstDocblock
+     * @param int $firstStart
+     * @param list<string> $docblocks
+     *
+     * @return void
+     */
+    protected function placeDocblock(Tokens $tokens, ?int $firstDocblock, int $firstStart, array $docblocks): void
+    {
+        if ($docblocks === []) {
+            return;
+        }
+
+        $indent = $tokens[$firstStart - 1]->isWhitespace() ? Str::afterLast($tokens[$firstStart - 1]->getContent(), "\n") : '';
+        $docblock = count($docblocks) === 1 ? $docblocks[0] : $this->combineDocblocks($docblocks, $indent);
+
+        if ($firstDocblock !== null) {
+            $tokens[$firstDocblock] = new Token([T_DOC_COMMENT, $docblock]);
+
+            return;
+        }
+
+        $tokens->insertAt($firstStart, [new Token([T_DOC_COMMENT, $docblock]), new Token([T_WHITESPACE, "\n{$indent}"])]);
+    }
+
+    /**
+     * @param list<string> $docblocks
+     * @param string $indent
+     *
+     * @return string
+     */
+    protected function combineDocblocks(array $docblocks, string $indent): string
+    {
+        $lines = collect($docblocks)
+            ->flatMap(fn(string $docblock): array => Str::of($docblock)->after('/**')->beforeLast('*/')->explode("\n")->all())
+            ->map(fn(string $line): string => Str::of($line)->trim()->ltrim('*')->trim()->toString())
+            ->filter()
+            ->map(fn(string $line): string => "{$indent} * {$line}\n")
+            ->implode('');
+
+        return "/**\n{$lines}{$indent} */";
     }
 
     /**
