@@ -1,0 +1,12 @@
+--- a/config/ultimate-formatter.php
++++ b/config/ultimate-formatter.php
+@@ -5,3 +5,9 @@
+ return [
++    'pre' => [
++        'clear-cache' => false,
++        'migrate' => false,
++    ],
+     'format' => [
++        'clear-cache' => ['optimize:clear', '--quiet'],
++        'migrate' => ['migrate', '--force'],
+         'ide-helper' => ['ide-helper:models', '--reset', '--write', '--quiet'],

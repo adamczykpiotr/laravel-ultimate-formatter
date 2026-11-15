@@ -7,12 +7,15 @@ namespace AdamczykPiotr\UltimateFormatter\Tests\Feature;
 use AdamczykPiotr\UltimateFormatter\Config\ConfigMigrator;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\MigrateConfigCommand;
 use AdamczykPiotr\UltimateFormatter\Tests\TestCase;
+use Illuminate\Support\Str;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Filesystem\Filesystem;
 
 class MigrateConfigCommandTest extends TestCase
 {
+    protected const DEFAULT_CONFIG = __DIR__ . '/../../config/ultimate-formatter.php';
     protected const CONFIG = "<?php\n\nreturn [\n    'format' => [\n        'rector' => ['process'],\n    ],\n];\n";
     protected const DIFF = "--- a/config/ultimate-formatter.php\n+++ b/config/ultimate-formatter.php\n@@ -2,3 +2,2 @@\n     'format' => [\n-        'rector' => ['process'],\n     ],\n";
 
@@ -111,6 +114,48 @@ class MigrateConfigCommandTest extends TestCase
 
         $this->assertSame('', $tester->getDisplay());
         $this->assertFileEquals(__DIR__ . '/../../config/ultimate-formatter.php', "{$this->projectPath}/config/ultimate-formatter.php");
+    }
+
+    /**
+     * @return void
+     */
+    public function test_migrates_a_config_published_before_config_version_to_the_default(): void
+    {
+        $configFile = "{$this->projectPath}/config/ultimate-formatter.php";
+        $this->filesystem->copy(__DIR__ . '/Fixture/ultimate-formatter-1.1.0.php.inc', $configFile);
+
+        $tester = new CommandTester(new MigrateConfigCommand());
+        $tester->execute(['--path' => $this->projectPath]);
+
+        $this->assertSame($this->withoutVersion($this->filesystem->readFile(self::DEFAULT_CONFIG)), $this->withoutVersion($this->filesystem->readFile($configFile)));
+        $this->assertStringContainsString('Migrated config/ultimate-formatter.php from version 1.1.0', $tester->getDisplay());
+        $this->assertStringNotContainsString('Skipped', $tester->getDisplay());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_leaves_an_unversioned_current_config_unchanged_apart_from_the_version(): void
+    {
+        $configFile = "{$this->projectPath}/config/ultimate-formatter.php";
+        $this->filesystem->dumpFile($configFile, $this->withoutVersion($this->filesystem->readFile(self::DEFAULT_CONFIG)));
+
+        $tester = new CommandTester(new MigrateConfigCommand());
+        $tester->execute(['--path' => $this->projectPath], ['verbosity' => OutputInterface::VERBOSITY_VERBOSE]);
+
+        $this->assertSame($this->withoutVersion($this->filesystem->readFile(self::DEFAULT_CONFIG)), $this->withoutVersion($this->filesystem->readFile($configFile)));
+        $this->assertStringContainsString("'config-version' =>", $this->filesystem->readFile($configFile));
+        $this->assertStringNotContainsString('Added', $tester->getDisplay());
+    }
+
+    /**
+     * @param string $config
+     *
+     * @return string
+     */
+    protected function withoutVersion(string $config): string
+    {
+        return Str::of($config)->replaceMatches("/^    'config-version' => '[^']*',\n\n/m", '')->toString();
     }
 
     /**
