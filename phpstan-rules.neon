@@ -97,6 +97,10 @@ services:
         tags:
             - phpstan.ignoreErrorExtension
     -
+        class: AdamczykPiotr\UltimateFormatter\PhpStan\IgnoreMarkerErrors
+        tags:
+            - phpstan.ignoreErrorExtension
+    -
         class: AdamczykPiotr\UltimateFormatter\PhpStan\Architecture\ControllerRules
         tags:
             - phpat.test

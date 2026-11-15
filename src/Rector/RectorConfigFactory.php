@@ -43,10 +43,11 @@ class RectorConfigFactory
             ->withComposerBased(laravel: true)
             ->withSets(self::sets())
             ->withRules(self::rules())
-            // Migrations keep their closures: `Schema::table()` callbacks stay full closures.
-            ->withSkip([
-                SingleLineClosureToArrowFunctionRector::class => ['*/database/migrations/*'],
-            ]);
+            ->withSkip(array_merge_recursive(
+                // Migrations keep their closures: `Schema::table()` callbacks stay full closures.
+                [SingleLineClosureToArrowFunctionRector::class => ['*/database/migrations/*']],
+                IgnoreMarkerSkips::find((string)getcwd()),
+            ));
 
         $laravelDataInstalled = InstalledVersions::isInstalled('spatie/laravel-data');
         foreach (self::configuredRules($laravelDataInstalled) as $rule => $configuration) {

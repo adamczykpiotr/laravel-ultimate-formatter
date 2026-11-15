@@ -7,10 +7,14 @@ namespace AdamczykPiotr\UltimateFormatter\PhpCsFixer;
 use AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers\BlankLineAfterBannerCommentFixer;
 use AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers\NumericLiteralSeparatorFixer;
 use AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers\SingleTraitUseStatementFixer;
+use AdamczykPiotr\UltimateFormatter\PhpCsFixer\IgnoreMarkers\EndFixer;
+use AdamczykPiotr\UltimateFormatter\PhpCsFixer\IgnoreMarkers\IgnoreMarkerPolicy;
+use AdamczykPiotr\UltimateFormatter\PhpCsFixer\IgnoreMarkers\StartFixer;
 use Fidry\CpuCoreCounter\CpuCoreCounter;
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
 use PhpCsFixer\Fixer\FixerInterface;
+use PhpCsFixer\RuleSet\RuleSet;
 use PhpCsFixer\Runner\Parallel\ParallelConfig;
 
 class FixerConfigFactory
@@ -24,12 +28,14 @@ class FixerConfigFactory
     public static function create(Finder $finder, string $cacheFile): Config
     {
         $parallelConfig = new ParallelConfig(self::availableCores());
+        $ignoreMarkerPolicy = self::ignoreMarkerPolicy();
 
         return (new Config())
             ->setRiskyAllowed(true)
             ->setParallelConfig($parallelConfig)
-            ->registerCustomFixers(self::customFixers())
+            ->registerCustomFixers(self::customFixers($ignoreMarkerPolicy))
             ->setRules(self::rules())
+            ->setRuleCustomisationPolicy($ignoreMarkerPolicy)
             ->setFinder($finder)
             ->setCacheFile($cacheFile);
     }
@@ -47,15 +53,31 @@ class FixerConfigFactory
     }
 
     /**
+     * @param IgnoreMarkerPolicy|null $ignoreMarkerPolicy
+     *
      * @return list<FixerInterface>
      */
-    public static function customFixers(): array
+    public static function customFixers(?IgnoreMarkerPolicy $ignoreMarkerPolicy = null): array
     {
+        $ignoreMarkerPolicy ??= self::ignoreMarkerPolicy();
+
         return [
             new BlankLineAfterBannerCommentFixer(),
             new NumericLiteralSeparatorFixer(),
             new SingleTraitUseStatementFixer(),
+            new StartFixer($ignoreMarkerPolicy),
+            new EndFixer($ignoreMarkerPolicy),
         ];
+    }
+
+    /**
+     * @return IgnoreMarkerPolicy
+     */
+    public static function ignoreMarkerPolicy(): IgnoreMarkerPolicy
+    {
+        $rules = array_values(array_diff(array_keys((new RuleSet(self::rules()))->getRules()), [StartFixer::NAME, EndFixer::NAME]));
+
+        return new IgnoreMarkerPolicy($rules);
     }
 
     /**
@@ -183,6 +205,10 @@ class FixerConfigFactory
             'UltimateFormatter/blank_line_after_banner_comment' => true,
             'UltimateFormatter/numeric_literal_separator' => true,
             'declare_strict_types' => true,
+
+            // Apply `// formatter-ignore <rule>` markers; see IgnoreMarkerPolicy.
+            StartFixer::NAME => true,
+            EndFixer::NAME => true,
         ];
     }
 }

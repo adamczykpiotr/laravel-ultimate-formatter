@@ -148,6 +148,34 @@ any other error with `ignoreErrors`. A key that isn't one of them, or a value th
 `false`, stops PHPStan with an error, so a typo can't leave a rule on unnoticed. PHPStan reads the flags
 on every run, so a change takes effect without clearing its cache.
 
+### Ignoring a line
+
+A `formatter-ignore` comment tells the tools to leave one line alone. Put it at the end of the line, or
+on its own line above it, and name each rule it ignores, separated by commas. An optional `-- reason`
+follows the list:
+
+```php
+$postalCode = 11122; // formatter-ignore UltimateFormatter/numeric_literal_separator
+
+// formatter-ignore ChangeSwitchToMatchRector, ultimateFormatter.disallowSprintf -- kept for the legacy API
+switch ($format) {
+```
+
+Each tool knows its rules by the name it reports:
+
+| Tool         | Identifier                                                  | Scope    |
+|--------------|-------------------------------------------------------------|----------|
+| PHP CS Fixer | the rule name, such as `array_syntax`                       | the line |
+| PHPStan      | the error identifier, such as `phpat.testServicesAreFinal`  | the line |
+| Rector       | the short class name, such as `ChangeSwitchToMatchRector`   | the file |
+
+A PHP CS Fixer rule that moves lines, such as `ordered_imports`, can't leave one line behind, so the
+marker skips that rule for the whole file. So does a change that would no longer parse with the marked
+line kept. Rector has no hook between a rule and the code it rewrites, so its markers always skip the rule
+for the whole file. A PHP CS Fixer rule that isn't enabled, or a Rector rule that doesn't exist, stops the
+run with an error, so a typo can't hide. PHPStan doesn't list the identifiers it knows, so a misspelt
+PHPStan identifier ignores nothing and the error stays.
+
 ### Upgrading
 
 `config/ultimate-formatter.php` is yours once it is published, so each release that changes the default

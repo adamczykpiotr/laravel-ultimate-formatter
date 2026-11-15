@@ -48,6 +48,7 @@ class RulesetTest extends TestCase
             'app/Models/Post.php:15 ultimateFormatter.modelNoAppends',
             'app/Services/TagExporter.php:7 phpat.testServicesAreFinal',
             'app/Services/TagExporter.php:7 phpat.testServicesAreReadonly',
+            'app/Services/TagMarkerService.php:15 ultimateFormatter.disallowSprintf',
             'app/Services/TagOwnerService.php:13 phpat.testServicesDoNotDependOnRequestResponse',
             'app/Services/TagService.php:15 phpat.testServicesDoNotDependOnRequestResponse',
             'app/Services/TagService.php:17 ultimateFormatter.disallowRequestResponseHelpersInServices',
