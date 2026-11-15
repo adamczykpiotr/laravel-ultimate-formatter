@@ -33,6 +33,7 @@ class InstallCommand extends FormatterCommand
         'check' => 'vendor/bin/ultimate-formatter check',
         'format' => 'vendor/bin/ultimate-formatter format',
     ];
+    protected const MIGRATE_CONFIG_SCRIPT = 'vendor/bin/ultimate-formatter migrate-config';
 
     /**
      * @return void
@@ -80,7 +81,7 @@ class InstallCommand extends FormatterCommand
             $output->writeln("Wrote {$target}.");
         }
 
-        $this->addComposerScripts($path, $output);
+        $this->addComposerScripts($path, $layout, $output);
 
         // A package's dist archive ships to every consumer, so the dev-only files stay out of it.
         if ($layout === ProjectLayout::PACKAGE) {
@@ -260,11 +261,12 @@ class InstallCommand extends FormatterCommand
 
     /**
      * @param string $path
+     * @param ProjectLayout $layout
      * @param OutputInterface $output
      *
      * @return void
      */
-    protected function addComposerScripts(string $path, OutputInterface $output): void
+    protected function addComposerScripts(string $path, ProjectLayout $layout, OutputInterface $output): void
     {
         $composerFile = "{$path}/composer.json";
         $composer = $this->readComposerFile($composerFile);
@@ -278,14 +280,16 @@ class InstallCommand extends FormatterCommand
         // An empty "scripts": [] decodes to an array, so it is replaced with an object.
         $scripts = $scripts instanceof stdClass ? $scripts : new stdClass();
         $missingScripts = array_diff_key(self::COMPOSER_SCRIPTS, get_object_vars($scripts));
-        if ($missingScripts === []) {
+        foreach ($missingScripts as $name => $command) {
+            $scripts->{$name} = $command;
+        }
+
+        // Only an app publishes config/ultimate-formatter.php, so only an app migrates it after each upgrade.
+        $addsMigrateConfig = $layout === ProjectLayout::APP && $this->addMigrateConfigScript($scripts);
+        if ($missingScripts === [] && $addsMigrateConfig === false) {
             $output->writeln('Skipped the composer scripts, they already exist.');
 
             return;
-        }
-
-        foreach ($missingScripts as $name => $command) {
-            $scripts->{$name} = $command;
         }
 
         $composer->scripts = $scripts;
@@ -293,8 +297,34 @@ class InstallCommand extends FormatterCommand
         $contents = json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         (new Filesystem())->dumpFile($composerFile, "{$contents}\n");
 
-        $names = implode(' and ', array_keys($missingScripts));
-        $output->writeln("Added the {$names} composer scripts.");
+        if ($missingScripts !== []) {
+            $names = implode(' and ', array_keys($missingScripts));
+            $output->writeln("Added the {$names} composer scripts.");
+        }
+
+        if ($addsMigrateConfig === true) {
+            $publishedFile = self::PUBLISHED_CONFIG_FILE;
+            $output->writeln("Added migrate-config to the post-update-cmd composer script, so {$publishedFile} follows each upgrade.");
+        }
+    }
+
+    /**
+     * @param stdClass $scripts
+     *
+     * @return bool
+     */
+    protected function addMigrateConfigScript(stdClass $scripts): bool
+    {
+        $hook = $scripts->{'post-update-cmd'} ?? [];
+        // Composer takes a single command as a string, or a list of them.
+        $commands = is_array($hook) ? $hook : [$hook];
+        if (in_array(self::MIGRATE_CONFIG_SCRIPT, $commands, true)) {
+            return false;
+        }
+
+        $scripts->{'post-update-cmd'} = [...$commands, self::MIGRATE_CONFIG_SCRIPT];
+
+        return true;
     }
 
     /**

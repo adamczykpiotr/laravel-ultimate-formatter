@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'config-version' => '0.0.0',
+
     'pre' => [
         'clear-cache' => false,
         'migrate' => false,

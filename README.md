@@ -57,6 +57,8 @@ newer Larastan can report errors of its own, such as `larastan.relationExistence
 separately.
 
 It also adds the `check` and `format` scripts to `composer.json`, keeping any scripts with those names that already exist.
+In an application it adds `vendor/bin/ultimate-formatter migrate-config` to `post-update-cmd`, so the published config
+[follows each upgrade](#upgrading).
 In a package it adds `export-ignore` entries to `.gitattributes` for the files it publishes, so they stay out of the dist archive.
 
 Pass `--ci` to also publish `.github/workflows/code-style.yml`, which runs `composer check` on the minimum PHP version in `composer.json`.
@@ -72,8 +74,8 @@ vendor/bin/ultimate-formatter check     # dry run of both, then PHPStan; stops a
 `check` runs PHPStan only when the project has a `phpstan.neon`, `phpstan.neon.dist` or `phpstan.dist.neon`.
 
 `format --models` regenerates model docblocks with laravel-ide-helper first, which is installed with the package. In a Laravel app the
-same commands are available as `php artisan formatter:install`, `formatter:format`
-and `formatter:check`.
+same commands are available as `php artisan formatter:install`, `formatter:format` and
+`formatter:check`.
 
 Pass `-q` to silence every step, so only the exit code reports the result. Pass `-v`, `-vv` or `-vvv` to
 print each command before it runs and hand the same level to it. Both replace any `--quiet` or `-v` in the
@@ -142,6 +144,29 @@ Rules you leave out keep their default. `phpat.testServicesAreNamedService` is o
 any other error with `ignoreErrors`. A key that isn't one of them, or a value that isn't `true` or
 `false`, stops PHPStan with an error, so a typo can't leave a rule on unnoticed. PHPStan reads the flags
 on every run, so a change takes effect without clearing its cache.
+
+### Upgrading
+
+`config/ultimate-formatter.php` is yours once it is published, so each release that changes the default
+config ships the change as `config/diffs/{version}.diff`, and `migrate-config` replays the diffs newer than
+the `config-version` your file records. It matches each change by its lines and keys rather than by line
+number, keeps your values and comments, and prints what it changed. It runs after every `composer update`
+through the `post-update-cmd` script that `install` adds. Run it by hand with `--dry-run` to see the changes
+first:
+
+```bash
+vendor/bin/ultimate-formatter migrate-config --dry-run
+```
+
+A default you changed keeps your value. A change whose surrounding lines you edited is skipped and printed,
+so you can apply it by hand, and the update still succeeds. A diff can't tell a renamed key from a removed
+one, so when a key you set is removed, the command names your value for you to move over. The other
+published files call the package's factories and include its ruleset, so they pick up new defaults without
+a migration.
+
+The diffs are generated on release: semantic-release runs `.github/scripts/generate-config-diff.sh` with
+the version it is about to tag. It sets `config-version` to that version on every release and writes a diff only
+when the config changed, and both are committed with the release.
 
 ## Performance
 
