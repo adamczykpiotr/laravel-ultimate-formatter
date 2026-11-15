@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.7.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.6.1...v1.7.0) (2026-11-15)
+
+
+### Features
+
+* architecture testing ([#24](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/24)) ([3788f72](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/3788f72535a79b726f0d3efa4cc6749e8c98844a)), closes [#22](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/22)
+
 ## [1.6.1](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.6.0...v1.6.1) (2026-11-10)
 
 
