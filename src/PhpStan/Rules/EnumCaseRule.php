@@ -14,6 +14,9 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
+ * Only string-backed enums: int-backed ones are allowed when the numbers matter, and External{Name} enums mirror
+ * values from outside the app.
+ *
  * @implements Rule<EnumCase>
  */
 class EnumCaseRule implements Rule
@@ -34,22 +37,42 @@ class EnumCaseRule implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
+        $enum = $scope->getClassReflection();
+        if ($enum === null || $enum->getBackedEnumType()?->isString()->yes() !== true) {
+            return [];
+        }
+
+        if (Str::startsWith(Str::afterLast($enum->getName(), '\\'), 'External')) {
+            return [];
+        }
+
         $case = $node->name->toString();
         $errors = [];
 
-        if (Str::isMatch('/^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/', $case) === false) {
+        if ($this->isScreamingCase($case) === false) {
             $errors[] = RuleErrorBuilder::message("Enum case {$case} must be UPPER_SNAKE_CASE.")
                 ->identifier('ultimateFormatter.enumCasesUpperSnakeCase')
                 ->build();
         }
 
-        // Int-backed enums are allowed when the numbers matter, so only string values must repeat the name.
-        if ($node->expr instanceof String_ && $node->expr->value !== $case) {
-            $errors[] = RuleErrorBuilder::message("Enum case {$case} is backed by '{$node->expr->value}', the backing value must equal the case name. Put any other representation in a method.")
+        if ($node->expr instanceof String_ && ($node->expr->value !== $case || $this->isScreamingCase($node->expr->value) === false)) {
+            $errors[] = RuleErrorBuilder::message("Enum case {$case} is backed by '{$node->expr->value}', the backing value must be UPPER_SNAKE_CASE and equal the case name. Put any other representation in a method.")
                 ->identifier('ultimateFormatter.enumValuesMatchCaseNames')
                 ->build();
         }
 
         return $errors;
+    }
+
+    /**
+     * Case names only hold letters, digits and underscores, so no lowercase letter means UPPER_SNAKE_CASE.
+     *
+     * @param string $value
+     *
+     * @return bool
+     */
+    protected function isScreamingCase(string $value): bool
+    {
+        return $value !== '' && $value === Str::upper($value);
     }
 }
