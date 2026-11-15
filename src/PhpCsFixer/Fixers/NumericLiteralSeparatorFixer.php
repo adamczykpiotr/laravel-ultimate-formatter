@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\PhpCsFixer\Fixers;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use PhpCsFixer\Fixer\FixerInterface;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
+use PhpCsFixer\Tokenizer\CT;
 use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 use SplFileInfo;
@@ -45,7 +47,7 @@ class NumericLiteralSeparatorFixer implements FixerInterface
     public function fix(SplFileInfo $file, Tokens $tokens): void
     {
         foreach ($tokens as $index => $token) {
-            if ($token->isGivenKind([T_LNUMBER, T_DNUMBER]) === false) {
+            if ($token->isGivenKind([T_LNUMBER, T_DNUMBER]) === false || $this->isCode($tokens, $index)) {
                 continue;
             }
 
@@ -92,6 +94,138 @@ class NumericLiteralSeparatorFixer implements FixerInterface
     public function supports(SplFileInfo $file): bool
     {
         return true;
+    }
+
+    /**
+     * IDs, years and SRIDs are codes, not quantities: `4326` reads as a code, `4_326` doesn't.
+     *
+     * @param Tokens<Token> $tokens
+     * @param int $index
+     *
+     * @return bool
+     */
+    protected function isCode(Tokens $tokens, int $index): bool
+    {
+        return collect($this->targetNames($tokens, $index))->contains(function(string $name): bool {
+            $words = $this->words($name);
+
+            return in_array($words->last(), ['id', 'ids'], true)
+                || $words->contains(fn(string $word): bool => Str::contains($word, 'year'))
+                || $words->intersect(['srid', 'srids', 'crs'])->isNotEmpty();
+        });
+    }
+
+    /**
+     * @param Tokens<Token> $tokens
+     * @param int $index
+     *
+     * @return list<string>
+     */
+    protected function targetNames(Tokens $tokens, int $index): array
+    {
+        // Step out of array literals, so `precinctIds: [5757, 10001]` still finds `precinctIds`.
+        $boundary = $this->expressionBoundary($tokens, $index);
+        while ($boundary !== null && $tokens[$boundary]->equalsAny([',', [CT::T_ARRAY_BRACKET_OPEN]])) {
+            $arrayStart = $this->arrayStart($tokens, $boundary);
+            if ($arrayStart === null) {
+                return [];
+            }
+
+            $boundary = $this->expressionBoundary($tokens, $arrayStart);
+        }
+
+        if ($boundary === null || $tokens[$boundary]->equalsAny(['=', [T_DOUBLE_ARROW], [CT::T_NAMED_ARGUMENT_COLON]]) === false) {
+            return [];
+        }
+
+        $target = $tokens->getPrevMeaningfulToken($boundary);
+        if ($target === null || $tokens[$target]->isGivenKind([T_VARIABLE, T_STRING, T_CONSTANT_ENCAPSED_STRING, CT::T_NAMED_ARGUMENT_NAME]) === false) {
+            return [];
+        }
+
+        $names = [Str::trim($tokens[$target]->getContent(), '$\'"')];
+
+        // Enum cases are named after the code (`EPSG_2180_PL_1992`), so the enum's name counts too.
+        $case = $tokens->getPrevMeaningfulToken($target);
+        $enum = $tokens->getPrevTokenOfKind($target, [[T_ENUM]]);
+        if ($case !== null && $tokens[$case]->isGivenKind(T_CASE) && $enum !== null) {
+            $enumName = $tokens->getNextMeaningfulToken($enum);
+            $names[] = $enumName === null ? '' : $tokens[$enumName]->getContent();
+        }
+
+        return $names;
+    }
+
+    /**
+     * The token before the expression that holds `$index`, skipping arithmetic so `year: 2000 + $index` finds `:`.
+     *
+     * @param Tokens<Token> $tokens
+     * @param int $index
+     *
+     * @return int|null
+     */
+    protected function expressionBoundary(Tokens $tokens, int $index): ?int
+    {
+        $boundary = $tokens->getPrevMeaningfulToken($index);
+        while ($boundary !== null && $this->continuesExpression($tokens[$boundary])) {
+            $boundary = $tokens->getPrevMeaningfulToken($boundary);
+        }
+
+        return $boundary;
+    }
+
+    /**
+     * The opening `[` of the short array that `$index` sits in, or null outside of one.
+     *
+     * @param Tokens<Token> $tokens
+     * @param int $index
+     *
+     * @return int|null
+     */
+    protected function arrayStart(Tokens $tokens, int $index): ?int
+    {
+        $depth = 0;
+        for ($cursor = $index; $cursor >= 0; --$cursor) {
+            $token = $tokens[$cursor];
+            if ($token->equalsAny([')', ']', '}', [CT::T_ARRAY_BRACKET_CLOSE]])) {
+                ++$depth;
+            } elseif ($token->equalsAny(['(', '[', '{', [CT::T_ARRAY_BRACKET_OPEN]])) {
+                if ($depth === 0) {
+                    return $token->isGivenKind(CT::T_ARRAY_BRACKET_OPEN) ? $cursor : null;
+                }
+
+                --$depth;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Token $token
+     *
+     * @return bool
+     */
+    protected function continuesExpression(Token $token): bool
+    {
+        return $token->isGivenKind([T_LNUMBER, T_DNUMBER, T_VARIABLE])
+            || $token->equalsAny(['+', '-', '*', '/', '%']);
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return Collection<int, non-falsy-string>
+     */
+    protected function words(string $name): Collection
+    {
+        // All-caps names (`LOCAL_SRID`) would otherwise split into single letters.
+        $normalized = Str::upper($name) === $name ? Str::lower($name) : $name;
+
+        return Str::of(Str::snake($normalized))
+            ->explode('_')
+            ->filter()
+            ->values();
     }
 
     /**

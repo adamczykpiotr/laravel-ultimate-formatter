@@ -178,7 +178,11 @@ Rector runs 4 parallel processes by default to stay within container memory limi
 - **Numeric literals.** Decimal literals from 1000 up are grouped by thousands (`1_000`, `10_000`,
   `1_000_000`), and misplaced separators are regrouped (`1000_000` becomes `1_000_000`), via the
   custom `UltimateFormatter/numeric_literal_separator` fixer. Hex, octal, binary and exponent literals
-  keep their form, which PHP CS Fixer's own `numeric_literal_separator` would change.
+  keep their form, which PHP CS Fixer's own `numeric_literal_separator` would change. Codes stay
+  plain too: a literal assigned or passed to a name ending in `id` or `ids`, or containing `year`, `srid`, `srids` or
+  `crs` (`$userId = 10001`, `drillingYear: 1990`, `LOCAL_SRID = 2180`, cases of a `ProjectionSrid`
+  enum). A code passed as a positional argument, like `ST::transform($point, 4326)`, has no name to
+  go by and still gets grouped.
 - **Docblocks.** Every method gets `@param`/`@return` tags in line with its signature. Narrower tags
   such as `non-empty-string` or `list<string>` are kept. `?string` in a tag becomes `string|null`.
 - **Banner comments.** A `/* | Section | */` banner is always followed by a blank line, via the
