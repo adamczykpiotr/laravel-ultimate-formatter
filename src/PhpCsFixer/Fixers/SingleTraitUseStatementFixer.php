@@ -43,22 +43,16 @@ class SingleTraitUseStatementFixer implements FixerInterface
      */
     public function fix(SplFileInfo $file, Tokens $tokens): void
     {
-        /** @var array<int, list<int>> $startsByClass */
-        $startsByClass = [];
-        foreach ((new TokensAnalyzer($tokens))->getClassyElements() as $index => $element) {
-            if ($element['type'] === 'trait_import') {
-                $startsByClass[$element['classIndex']][] = $index;
-            }
-        }
-
-        // From the last class back, so merging one class never shifts the indexes of another.
-        krsort($startsByClass);
-        foreach ($startsByClass as $starts) {
+        // From the last class back: merging a class only shifts the tokens after its opening, so the classes
+        // before it keep their indexes. A nested anonymous class sits after its outer class, so it goes first,
+        // and the elements are read again after each class, since the merge shifted the outer class's indexes.
+        $limit = PHP_INT_MAX;
+        while (($class = $this->lastClassBefore($tokens, $limit)) !== null) {
+            [$limit, $starts] = $class;
             if (count($starts) < 2) {
                 continue;
             }
 
-            sort($starts);
             $ranges = [];
             foreach ($starts as $start) {
                 $range = $this->simpleStatementRange($tokens, $start);
@@ -75,6 +69,40 @@ class SingleTraitUseStatementFixer implements FixerInterface
 
             $this->merge($tokens, $ranges);
         }
+    }
+
+    /**
+     * @param Tokens<Token> $tokens
+     * @param int $limit
+     *
+     * @return array{int, list<int>}|null the class index and its sorted trait import indexes
+     */
+    protected function lastClassBefore(Tokens $tokens, int $limit): ?array
+    {
+        $classIndex = null;
+        $starts = [];
+        foreach ((new TokensAnalyzer($tokens))->getClassyElements() as $index => $element) {
+            if ($element['type'] !== 'trait_import' || $element['classIndex'] >= $limit) {
+                continue;
+            }
+
+            if ($classIndex === null || $element['classIndex'] > $classIndex) {
+                $classIndex = $element['classIndex'];
+                $starts = [];
+            }
+
+            if ($element['classIndex'] === $classIndex) {
+                $starts[] = $index;
+            }
+        }
+
+        if ($classIndex === null) {
+            return null;
+        }
+
+        sort($starts);
+
+        return [$classIndex, $starts];
     }
 
     /**

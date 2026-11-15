@@ -94,5 +94,10 @@ class SingleTraitUseStatementFixerTest extends TestCase
             "<?php\nuse App\\A;\nuse App\\B;\nclass Tag\n{\n    use A;\n    use B;\n}\n",
             "<?php\nuse App\\A;\nuse App\\B;\nclass Tag\n{\n    use A, B;\n}\n",
         ];
+
+        yield 'merges a nested anonymous class and its outer class' => [
+            "<?php\nclass Outer\n{\n    use A;\n\n    public function make(): object\n    {\n        return new class {\n            use X;\n            use Y;\n        };\n    }\n\n    use B;\n}\n",
+            "<?php\nclass Outer\n{\n    use A, B;\n\n    public function make(): object\n    {\n        return new class {\n            use X, Y;\n        };\n    }\n}\n",
+        ];
     }
 }

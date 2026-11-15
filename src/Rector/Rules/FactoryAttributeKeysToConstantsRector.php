@@ -171,6 +171,11 @@ AFTER,
             return null;
         }
 
+        // A `@extends Factory<MissingModel>` names a class that can't be reflected.
+        if ($this->reflectionProvider->hasClass($classNames[0]) === false) {
+            return null;
+        }
+
         return $classNames[0];
     }
 
@@ -278,7 +283,8 @@ AFTER,
         $nativeReflection = $this->reflectionProvider->getClass($modelClass)->getNativeReflection();
         foreach ($nativeReflection->getReflectionConstants() as $constant) {
             $value = $constant->getValue();
-            if (str_starts_with($constant->getName(), 'ATTRIBUTE_') && is_string($value)) {
+            // The factory reads the constant from outside the model, so only a public one is reachable.
+            if ($constant->isPublic() && str_starts_with($constant->getName(), 'ATTRIBUTE_') && is_string($value)) {
                 $constantsByValue[$value][] = $constant->getName();
             }
         }

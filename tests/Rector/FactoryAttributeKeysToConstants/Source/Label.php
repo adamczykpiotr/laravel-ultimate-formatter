@@ -9,4 +9,5 @@ use Illuminate\Database\Eloquent\Model;
 class Label extends Model
 {
     public const ATTRIBUTE_TITLE = 'title';
+    protected const ATTRIBUTE_SECRET = 'secret';
 }
