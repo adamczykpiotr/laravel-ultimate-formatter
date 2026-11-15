@@ -147,7 +147,7 @@ abstract class FormatterCommand extends Command
     protected function withVerbosity(array $arguments, OutputInterface $output): array
     {
         $flag = match (true) {
-            $output->isQuiet() => '--quiet',
+            $output->isQuiet(), $output->isSilent() => '--quiet',
             $output->isDebug() => '-vvv',
             $output->isVeryVerbose() => '-vv',
             $output->isVerbose() => '-v',

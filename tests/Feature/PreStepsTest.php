@@ -7,6 +7,7 @@ namespace AdamczykPiotr\UltimateFormatter\Tests\Feature;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\CheckCommand;
 use AdamczykPiotr\UltimateFormatter\Console\Commands\FormatCommand;
 use AdamczykPiotr\UltimateFormatter\Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Filesystem\Filesystem;
@@ -99,14 +100,28 @@ class PreStepsTest extends TestCase
     }
 
     /**
+     * @return array<string, array{int}>
+     */
+    public static function quietVerbosities(): array
+    {
+        return [
+            'quiet' => [OutputInterface::VERBOSITY_QUIET],
+            'silent' => [OutputInterface::VERBOSITY_SILENT],
+        ];
+    }
+
+    /**
+     * @param int $verbosity
+     *
      * @return void
      */
-    public function test_quiet_silences_every_step(): void
+    #[DataProvider('quietVerbosities')]
+    public function test_quiet_silences_every_step(int $verbosity): void
     {
         $this->publishConfig("['pre' => ['migrate' => true]]");
 
         $tester = new CommandTester(new FormatCommand());
-        $tester->execute(['--path' => $this->projectPath, '--models' => true], ['verbosity' => OutputInterface::VERBOSITY_QUIET]);
+        $tester->execute(['--path' => $this->projectPath, '--models' => true], ['verbosity' => $verbosity]);
 
         $this->assertSame(
             "migrate --force --quiet\nide-helper:models --reset --write --quiet\n",
