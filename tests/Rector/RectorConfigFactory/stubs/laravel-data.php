@@ -10,6 +10,9 @@ namespace Spatie\LaravelData;
 if (class_exists(Data::class, false) === false) {
     abstract class Data
     {
+        /**
+         * @return void
+         */
         final public function __construct() {}
 
         /**

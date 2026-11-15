@@ -13,14 +13,10 @@ use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 use SplFileInfo;
 
-/**
- * Groups the integer part of every decimal literal by thousands: `1_000`, `10_000`, `1_000_000`.
- * Separators in the wrong place are regrouped, so `1000_000` becomes `1_000_000`. Unlike PHP CS
- * Fixer's `numeric_literal_separator`, hex, octal, binary and exponent literals keep their form.
- */
 class NumericLiteralSeparatorFixer implements FixerInterface
 {
     protected const MIN_DIGITS = 4;
+    protected const GROUP_SIZE = 3;
 
     /**
      * @param Tokens<Token> $tokens
@@ -111,11 +107,16 @@ class NumericLiteralSeparatorFixer implements FixerInterface
         }
 
         $integer = Str::before($literal, '.');
+        $fraction = Str::substr($literal, strlen($integer));
         $digits = Str::remove('_', $integer);
-        $grouped = strlen($digits) < self::MIN_DIGITS
-            ? $digits
-            : Str::reverse(Str::of($digits)->reverse()->split(3)->implode('_'));
+        if (strlen($digits) < self::MIN_DIGITS) {
+            return "{$digits}{$fraction}";
+        }
 
-        return $grouped . Str::substr($literal, strlen($integer));
+        // Split from the right, so the short group lands first: `12_345`, not `123_45`.
+        $reversedGroups = Str::of($digits)->reverse()->split(self::GROUP_SIZE)->implode('_');
+        $grouped = Str::reverse($reversedGroups);
+
+        return "{$grouped}{$fraction}";
     }
 }

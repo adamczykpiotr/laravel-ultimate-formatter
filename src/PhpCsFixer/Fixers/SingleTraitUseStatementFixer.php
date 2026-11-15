@@ -14,11 +14,6 @@ use PhpCsFixer\Tokenizer\Tokens;
 use PhpCsFixer\Tokenizer\TokensAnalyzer;
 use SplFileInfo;
 
-/**
- * Merges the trait `use` statements of a class into the first one, the opposite of PHP CS Fixer's
- * `single_trait_insert_per_statement`. `ordered_traits` then sorts the names. A class whose trait
- * statements carry a `{ ... }` conflict resolution block or a comment is left alone.
- */
 class SingleTraitUseStatementFixer implements FixerInterface
 {
     /**
@@ -117,8 +112,6 @@ class SingleTraitUseStatementFixer implements FixerInterface
     }
 
     /**
-     * The index of the closing `;` of a `use A, B;` statement, or null for anything else.
-     *
      * @param Tokens<Token> $tokens
      * @param int $start
      *
@@ -126,6 +119,7 @@ class SingleTraitUseStatementFixer implements FixerInterface
      */
     protected function simpleStatementRange(Tokens $tokens, int $start): ?array
     {
+        // A `{ ... }` conflict resolution block or a comment can't survive the merge, so the class is left alone.
         $end = $tokens->getNextTokenOfKind($start, [';', '{']);
         if ($end === null || $tokens[$end]->equals('{')) {
             return null;
@@ -148,10 +142,9 @@ class SingleTraitUseStatementFixer implements FixerInterface
      */
     protected function merge(Tokens $tokens, array $ranges): void
     {
-        $names = [];
-        foreach ($ranges as [$start, $end]) {
-            $names = [...$names, ...$this->names($tokens, $start, $end)];
-        }
+        $names = collect($ranges)
+            ->flatMap(fn(array $range): array => $this->names($tokens, ...$range))
+            ->all();
 
         // Later statements first, so the first statement's indexes stay put until it is rewritten.
         foreach (array_reverse(array_slice($ranges, 1)) as [$start, $end]) {
@@ -176,8 +169,6 @@ class SingleTraitUseStatementFixer implements FixerInterface
     }
 
     /**
-     * The tokens of each trait name in one statement, without the whitespace around them.
-     *
      * @param Tokens<Token> $tokens
      * @param int $start
      * @param int $end

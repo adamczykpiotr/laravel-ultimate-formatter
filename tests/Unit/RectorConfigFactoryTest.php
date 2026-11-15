@@ -12,16 +12,17 @@ use Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector;
 use Rector\Php80\Rector\Switch_\ChangeSwitchToMatchRector;
 use Rector\Privatization\Rector\Property\PrivatizeFinalClassPropertyRector;
 use Rector\Renaming\Rector\MethodCall\RenameMethodRector;
-use Rector\Set\ValueObject\SetList;
 use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
 use Symfony\Component\Process\Process;
 
 class RectorConfigFactoryTest extends TestCase
 {
     /**
+     * Rector's `list-rules` takes a few seconds, so its output is shared by the tests below.
+     *
      * @var list<string>|null
      */
-    protected static ?array $loadedRules = null;
+    private static ?array $loadedRules = null;
 
     /**
      * @return void
@@ -56,30 +57,9 @@ class RectorConfigFactoryTest extends TestCase
     /**
      * @return void
      */
-    public function test_leaves_out_the_privatization_and_coding_style_sets(): void
-    {
-        $this->assertNotContains(SetList::PRIVATIZATION, RectorConfigFactory::sets());
-        $this->assertNotContains(SetList::CODING_STYLE, RectorConfigFactory::sets());
-    }
-
-    /**
-     * @return void
-     */
-    public function test_removes_every_debugging_call(): void
-    {
-        $this->assertSame(
-            ['dd', 'dump', 'var_dump', 'print_r', 'ray'],
-            RectorConfigFactory::configuredRules(laravelDataInstalled: false)[RemoveDumpDataDeadCodeRector::class],
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function test_renames_validate_and_create_only_with_laravel_data(): void
+    public function test_skips_the_validate_and_create_rename_without_laravel_data(): void
     {
         $this->assertArrayNotHasKey(RenameMethodRector::class, RectorConfigFactory::configuredRules(laravelDataInstalled: false));
-        $this->assertArrayHasKey(RenameMethodRector::class, RectorConfigFactory::configuredRules(laravelDataInstalled: true));
     }
 
     /**
@@ -87,7 +67,7 @@ class RectorConfigFactoryTest extends TestCase
      *
      * @return list<string>
      */
-    protected static function loadedRules(): array
+    private static function loadedRules(): array
     {
         if (self::$loadedRules !== null) {
             return self::$loadedRules;

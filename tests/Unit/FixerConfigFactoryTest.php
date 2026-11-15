@@ -67,17 +67,11 @@ class FixerConfigFactoryTest extends TestCase
      */
     public function test_never_enables_fixers_that_conflict_with_the_standard(): void
     {
-        $fixerFactory = new FixerFactory();
-        $fixerFactory->registerBuiltInFixers();
-        $fixerFactory->registerCustomFixers(FixerConfigFactory::customFixers());
-        $fixerFactory->useRuleSet(new RuleSet(FixerConfigFactory::rules()));
-
-        $enabledFixers = collect($fixerFactory->getFixers())
+        $enabledFixers = collect($this->fixers(FixerConfigFactory::rules()))
             ->map(fn(FixerInterface $fixer): string => $fixer->getName());
 
-        // All traits go in one `use` statement.
         $this->assertNotContains('single_trait_insert_per_statement', $enabledFixers);
-        // Separates years and ports too; UltimateFormatter/numeric_literal_separator replaces it.
+        // Rewrites hex, octal, binary and exponent literals; UltimateFormatter/numeric_literal_separator replaces it.
         $this->assertNotContains('numeric_literal_separator', $enabledFixers);
     }
 
@@ -86,20 +80,17 @@ class FixerConfigFactoryTest extends TestCase
      */
     public function test_sorts_traits_into_one_statement_first_in_the_class(): void
     {
-        $fixerFactory = new FixerFactory();
-        $fixerFactory->registerBuiltInFixers();
-        $fixerFactory->registerCustomFixers(FixerConfigFactory::customFixers());
-        $fixerFactory->useRuleSet(new RuleSet([
+        $fixers = $this->fixers([
             'UltimateFormatter/single_trait_use_statement' => true,
             'ordered_traits' => FixerConfigFactory::rules()['ordered_traits'],
             'ordered_class_elements' => FixerConfigFactory::rules()['ordered_class_elements'],
-        ]));
+        ]);
 
         Tokens::clearCache();
         $tokens = Tokens::fromCode(
             "<?php\nclass Tag\n{\n    use SoftDeletes;\n    public const TYPE = 'tag';\n    use Notifiable, HasFactory;\n    public function name(): string\n    {\n        return 'tag';\n    }\n}\n",
         );
-        foreach ($fixerFactory->getFixers() as $fixer) {
+        foreach ($fixers as $fixer) {
             $fixer->fix(new SplFileInfo(__FILE__), $tokens);
         }
 
@@ -121,5 +112,20 @@ class FixerConfigFactoryTest extends TestCase
             'next_line_unless_newline_at_signature_end',
             data_get($rules, 'braces_position.functions_opening_brace'),
         );
+    }
+
+    /**
+     * @param array<string, array<string, mixed>|bool> $rules
+     *
+     * @return list<FixerInterface>
+     */
+    private function fixers(array $rules): array
+    {
+        $fixerFactory = new FixerFactory();
+        $fixerFactory->registerBuiltInFixers();
+        $fixerFactory->registerCustomFixers(FixerConfigFactory::customFixers());
+        $fixerFactory->useRuleSet(new RuleSet($rules));
+
+        return $fixerFactory->getFixers();
     }
 }

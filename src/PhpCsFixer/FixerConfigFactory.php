@@ -67,8 +67,8 @@ class FixerConfigFactory
         // every method keeps @param/@return even when native types cover them.
         // `single_trait_insert_per_statement` stays off: UltimateFormatter/single_trait_use_statement
         // does the opposite and puts all traits in one `use` statement.
-        // `numeric_literal_separator` is replaced by UltimateFormatter/numeric_literal_separator,
-        // which leaves hex, octal, binary and exponent literals alone.
+        // `numeric_literal_separator` stays off: it also rewrites hex, octal, binary and exponent
+        // literals, which UltimateFormatter/numeric_literal_separator leaves alone.
         return [
             'phpdoc_add_missing_param_annotation' => ['only_untyped' => false],
             'phpdoc_align' => ['align' => 'left'],
