@@ -53,11 +53,11 @@ class ConfigMigrator
     public function migrate(string $configFile, bool $dryRun = false): ConfigMigration
     {
         $lines = Str::of($this->filesystem->readFile($configFile))->explode("\n");
-        $isVersioned = $this->publishedVersion($lines) !== null;
-        $fromVersion = $this->publishedVersion($lines) ?? $this->unversionedVersion($lines);
+        $publishedVersion = $this->publishedVersion($lines);
+        $fromVersion = $publishedVersion ?? $this->unversionedVersion($lines);
         $toVersion = $this->latestVersion();
-        if ($isVersioned && version_compare($fromVersion, $toVersion, '>=')) {
-            return new ConfigMigration($fromVersion, $fromVersion);
+        if ($publishedVersion !== null && version_compare($publishedVersion, $toVersion, '>=')) {
+            return new ConfigMigration(ConfigMigrationOutcome::UP_TO_DATE, $publishedVersion, $publishedVersion);
         }
 
         // The diffs leave the version line out, so it is lifted out while they apply and written back after.
@@ -67,7 +67,8 @@ class ConfigMigrator
             throw new ConfigNotMigratableException('it does not return a [...] array');
         }
 
-        $applied = [];
+        // Stamping the version is a change too, even when no diff applies.
+        $applied = $publishedVersion === null ? ['Added config-version.'] : [];
         $skipped = [];
         $versions = $this->versions()->filter(fn(string $version): bool => version_compare($version, $fromVersion, '>'));
         foreach ($versions as $version) {
@@ -90,7 +91,7 @@ class ConfigMigrator
             $this->filesystem->dumpFile($configFile, $lines->implode("\n"));
         }
 
-        return new ConfigMigration($fromVersion, $toVersion, $applied, $skipped);
+        return new ConfigMigration(ConfigMigrationOutcome::MIGRATED, $fromVersion, $toVersion, $applied, $skipped);
     }
 
     /**

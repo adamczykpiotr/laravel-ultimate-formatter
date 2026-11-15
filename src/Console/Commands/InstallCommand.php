@@ -11,6 +11,7 @@ use AdamczykPiotr\UltimateFormatter\Install\ComposerScriptsChange;
 use AdamczykPiotr\UltimateFormatter\Install\FilePublisher;
 use AdamczykPiotr\UltimateFormatter\Install\GitAttributes;
 use AdamczykPiotr\UltimateFormatter\Install\ProjectFile;
+use AdamczykPiotr\UltimateFormatter\Install\PublishedFile;
 use AdamczykPiotr\UltimateFormatter\Install\RenderedFile;
 use AdamczykPiotr\UltimateFormatter\Install\StubRenderer;
 use AdamczykPiotr\UltimateFormatter\PhpStan\PhpStanSetup;
@@ -66,16 +67,14 @@ class InstallCommand extends FormatterCommand
 
         $force = $input->getOption('force') === true;
         $renderedFiles = $this->stubRenderer->render($path, $layout, $input->getOption('ci') === true);
-        foreach ($renderedFiles as $renderedFile) {
-            $this->publishFile($path, $renderedFile, $force, $output);
-        }
+        $publishedFiles = $renderedFiles->map(fn(RenderedFile $renderedFile): PublishedFile => $this->publishFile($path, $renderedFile, $force, $output));
 
         $composerScriptsChange = $this->composerScripts->install($path, $layout);
         $this->writeComposerScriptsChange($composerScriptsChange, $output);
 
-        // A package's dist archive ships to every consumer, so the dev-only files stay out of it.
+        // A package's dist archive ships to every consumer, so the dev-only files stay out of it, under the names they have.
         if ($layout === ProjectLayout::PACKAGE) {
-            $targets = $renderedFiles->map(fn(RenderedFile $renderedFile): string => $renderedFile->file->path());
+            $targets = $publishedFiles->map(fn(PublishedFile $publishedFile): string => $publishedFile->path);
             $ignoredTargets = $this->gitAttributes->addExportIgnores($path, $targets);
             $output->writeln($ignoredTargets->isEmpty()
                 ? 'Skipped .gitattributes, the published files are already export-ignored.'
@@ -91,21 +90,23 @@ class InstallCommand extends FormatterCommand
      * @param bool $force
      * @param OutputInterface $output
      *
-     * @return void
+     * @return PublishedFile
      */
-    protected function publishFile(string $path, RenderedFile $renderedFile, bool $force, OutputInterface $output): void
+    protected function publishFile(string $path, RenderedFile $renderedFile, bool $force, OutputInterface $output): PublishedFile
     {
         $target = $renderedFile->file->path();
-        $existingFile = $this->filePublisher->publish($path, $renderedFile, $force);
-        if ($existingFile === null) {
+        $publishedFile = $this->filePublisher->publish($path, $renderedFile, $force);
+        if ($publishedFile->isWritten) {
             $output->writeln("Wrote {$target}.");
 
-            return;
+            return $publishedFile;
         }
 
         $rulesFile = PhpStanSetup::RULES_FILE;
         $hint = $renderedFile->file === ProjectFile::PHPSTAN_CONFIG ? " Include {$rulesFile} in it to run the ruleset." : '';
-        $output->writeln("Skipped {$target}, {$existingFile} already exists.{$hint}");
+        $output->writeln("Skipped {$target}, {$publishedFile->path} already exists.{$hint}");
+
+        return $publishedFile;
     }
 
     /**

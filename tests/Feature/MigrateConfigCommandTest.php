@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Tester\CommandTester;
+use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
 class MigrateConfigCommandTest extends TestCase
@@ -56,7 +57,7 @@ class MigrateConfigCommandTest extends TestCase
 
         $this->assertSame(Command::SUCCESS, $tester->getStatusCode());
         $this->assertSame(
-            "Removed rector.\nMigrated config/ultimate-formatter.php from version 0.0.0 to 1.0.0.\n",
+            "Added config-version.\nRemoved rector.\nMigrated config/ultimate-formatter.php from version 0.0.0 to 1.0.0.\n",
             $tester->getDisplay(),
         );
         $this->assertStringNotContainsString("'rector'", $this->filesystem->readFile("{$this->projectPath}/config/ultimate-formatter.php"));
@@ -141,11 +142,64 @@ class MigrateConfigCommandTest extends TestCase
         $this->filesystem->dumpFile($configFile, $this->withoutVersion($this->filesystem->readFile(self::DEFAULT_CONFIG)));
 
         $tester = new CommandTester(new MigrateConfigCommand());
-        $tester->execute(['--path' => $this->projectPath], ['verbosity' => OutputInterface::VERBOSITY_VERBOSE]);
+        $tester->execute(['--path' => $this->projectPath]);
 
         $this->assertSame($this->withoutVersion($this->filesystem->readFile(self::DEFAULT_CONFIG)), $this->withoutVersion($this->filesystem->readFile($configFile)));
         $this->assertStringContainsString("'config-version' =>", $this->filesystem->readFile($configFile));
-        $this->assertStringNotContainsString('Added', $tester->getDisplay());
+        $this->assertSame("Added config-version.\nMigrated config/ultimate-formatter.php to version {$this->latestVersion()}.\n", $tester->getDisplay());
+    }
+
+    /**
+     * @return void
+     */
+    public function test_dry_run_reports_the_version_an_unversioned_config_would_get(): void
+    {
+        $configFile = "{$this->projectPath}/config/ultimate-formatter.php";
+        $unversioned = $this->withoutVersion($this->filesystem->readFile(self::DEFAULT_CONFIG));
+        $this->filesystem->dumpFile($configFile, $unversioned);
+
+        $tester = new CommandTester(new MigrateConfigCommand());
+        $tester->execute(['--path' => $this->projectPath, '--dry-run' => true], ['verbosity' => OutputInterface::VERBOSITY_VERBOSE]);
+
+        $this->assertSame("Added config-version.\nWould migrate config/ultimate-formatter.php to version {$this->latestVersion()}.\n", $tester->getDisplay());
+        $this->assertSame($unversioned, $this->filesystem->readFile($configFile));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_warns_about_a_config_it_cannot_write_without_failing(): void
+    {
+        $this->filesystem->dumpFile("{$this->projectPath}/config/ultimate-formatter.php", self::CONFIG);
+        $this->filesystem->dumpFile("{$this->projectPath}/diffs/1.0.0.diff", self::DIFF);
+        $readOnlyFilesystem = new class extends Filesystem {
+            /**
+             * @param string $filename
+             * @param mixed $content
+             *
+             * @return void
+             */
+            public function dumpFile(string $filename, $content): void
+            {
+                throw new IOException("Failed to write file \"{$filename}\": Permission denied.", path: $filename);
+            }
+        };
+        $migrator = new ConfigMigrator("{$this->projectPath}/diffs", filesystem: $readOnlyFilesystem);
+
+        $tester = new CommandTester(new MigrateConfigCommand($migrator));
+        $tester->execute(['--path' => $this->projectPath]);
+
+        $this->assertSame(Command::SUCCESS, $tester->getStatusCode());
+        $this->assertStringContainsString("Skipped the config migration, config/ultimate-formatter.php can't be edited: Failed to write file", $tester->getDisplay());
+        $this->assertStringContainsString("Permission denied.\n", $tester->getDisplay());
+    }
+
+    /**
+     * @return string
+     */
+    protected function latestVersion(): string
+    {
+        return (new ConfigMigrator())->latestVersion();
     }
 
     /**

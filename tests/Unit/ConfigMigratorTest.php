@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Tests\Unit;
 
+use AdamczykPiotr\UltimateFormatter\Config\ConfigMigrationOutcome;
 use AdamczykPiotr\UltimateFormatter\Config\ConfigMigrator;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
@@ -255,6 +256,21 @@ class ConfigMigratorTest extends TestCase
 
         $this->assertTrue($migration->isUpToDate());
         $this->assertSame($published, $this->filesystem->readFile($this->configFile));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_reports_stamping_a_current_unversioned_config_as_a_migration(): void
+    {
+        $unversioned = str_replace("    'config-version' => '0.0.0',\n\n", '', self::OLD_DEFAULT);
+        $this->filesystem->dumpFile($this->configFile, $unversioned);
+
+        $migration = $this->migrator()->migrate($this->configFile, dryRun: true);
+
+        $this->assertSame(ConfigMigrationOutcome::MIGRATED, $migration->outcome);
+        $this->assertSame(['Added config-version.'], $migration->applied);
+        $this->assertSame($unversioned, $this->filesystem->readFile($this->configFile));
     }
 
     /**

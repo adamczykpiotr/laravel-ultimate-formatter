@@ -19,15 +19,15 @@ class FilePublisher
     ) {}
 
     /**
-     * Writes the file unless one is in its way, and returns the file in its way.
+     * Writes the file unless one is in its way, and returns the file the project ends up with.
      *
      * @param string $path
      * @param RenderedFile $renderedFile
      * @param bool $force
      *
-     * @return string|null
+     * @return PublishedFile
      */
-    public function publish(string $path, RenderedFile $renderedFile, bool $force): string|null
+    public function publish(string $path, RenderedFile $renderedFile, bool $force): PublishedFile
     {
         $target = $renderedFile->file->path();
         $existingFile = $this->existingFile($path, $renderedFile->file);
@@ -35,12 +35,12 @@ class FilePublisher
         // A phpstan.neon would shadow a .dist config, so --force only overwrites the file itself.
         $overwrites = $force && $renderedFile->file->isOverwritable() && $existingFile === $target;
         if ($existingFile !== null && $overwrites === false) {
-            return $existingFile;
+            return new PublishedFile($existingFile, isWritten: false);
         }
 
         $this->filesystem->dumpFile("{$path}/{$target}", $renderedFile->contents);
 
-        return null;
+        return new PublishedFile($target, isWritten: true);
     }
 
     /**

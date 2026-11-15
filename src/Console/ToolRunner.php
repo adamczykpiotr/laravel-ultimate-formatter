@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Console;
 
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
@@ -36,9 +37,11 @@ class ToolRunner
             $command[] = '--ansi';
         }
 
+        // A crash message on stderr stays on the terminal when stdout is redirected to a report.
+        $errorOutput = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $process = new Process($command, $projectPath, timeout: null);
 
-        return $process->run(fn(string $type, string $buffer) => $output->write($buffer));
+        return $process->run(fn(string $type, string $buffer) => ($type === Process::ERR ? $errorOutput : $output)->write($buffer));
     }
 
     /**

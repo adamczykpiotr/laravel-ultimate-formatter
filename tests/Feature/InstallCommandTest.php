@@ -327,6 +327,21 @@ class InstallCommandTest extends TestCase
     /**
      * @return void
      */
+    public function test_export_ignores_the_phpstan_config_the_package_already_has(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->touch("{$this->projectPath}/phpstan.neon.dist");
+
+        $this->runInstall();
+
+        $attributes = $this->readProjectFile('.gitattributes');
+        $this->assertStringContainsString("/phpstan.neon.dist export-ignore\n", $attributes);
+        $this->assertStringNotContainsString("/phpstan.neon export-ignore\n", $attributes);
+    }
+
+    /**
+     * @return void
+     */
     public function test_creates_gitattributes_in_a_package(): void
     {
         $this->filesystem->mkdir("{$this->projectPath}/src");
