@@ -67,8 +67,9 @@ class ResourceKeysCamelCaseRule implements Rule
 
         $errors = [];
         foreach ($keys as $key) {
-            if (Str::isMatch('/^[a-z][a-zA-Z0-9]*$/', $key->value) === false) {
-                $errors[] = RuleErrorBuilder::message("Resource key '{$key->value}' must be camelCase, like '" . Str::camel($key->value) . "'.")
+            $expected = $this->camelKey($key->value);
+            if ($key->value !== $expected) {
+                $errors[] = RuleErrorBuilder::message("Resource key '{$key->value}' must be camelCase, like '{$expected}'.")
                     ->identifier('ultimateFormatter.resourceKeysCamelCase')
                     ->line($key->getStartLine())
                     ->build();
@@ -76,6 +77,20 @@ class ResourceKeysCamelCaseRule implements Rule
         }
 
         return $errors;
+    }
+
+    /**
+     * The camelCase form of a key. One leading underscore marks a meta key such as '_actions' and is kept.
+     *
+     * @param string $key
+     *
+     * @return string
+     */
+    protected function camelKey(string $key): string
+    {
+        $prefix = Str::startsWith($key, '_') ? '_' : '';
+
+        return $prefix . Str::camel(Str::after($key, $prefix));
     }
 
     /**

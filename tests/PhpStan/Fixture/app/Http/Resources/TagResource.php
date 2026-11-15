@@ -25,6 +25,8 @@ class TagResource extends JsonResource
             'posts' => $this->posts->map(fn($post): array => [
                 'post_title' => $post->title,
             ]),
+            '_actions' => [],
+            '__meta' => [],
             'route' => route('tags.show', ['tag_id' => $this->id]),
         ];
     }

@@ -36,6 +36,7 @@ class RulesetTest extends TestCase
             'app/Http/Resources/TagResource.php:20 ultimateFormatter.resourceKeysCamelCase',
             'app/Http/Resources/TagResource.php:23 ultimateFormatter.resourceKeysCamelCase',
             'app/Http/Resources/TagResource.php:26 ultimateFormatter.resourceKeysCamelCase',
+            'app/Http/Resources/TagResource.php:29 ultimateFormatter.resourceKeysCamelCase',
             'app/Jobs/SyncTagJob.php:13 ultimateFormatter.queuedClassNoPrivateProperties',
             'app/Jobs/SyncTagJob.php:17 ultimateFormatter.queuedClassNoPrivateProperties',
             'app/Models/Post.php:13 ultimateFormatter.modelNoWith',
