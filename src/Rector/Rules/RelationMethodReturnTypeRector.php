@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Rector\Rules;
 
+use AdamczykPiotr\UltimateFormatter\Rector\Support\SubclassIndex;
 use PhpParser\Node;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -28,10 +29,12 @@ final class RelationMethodReturnTypeRector extends AbstractRector
     /**
      * @param ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard
      * @param ReflectionProvider $reflectionProvider
+     * @param SubclassIndex $subclassIndex
      */
     public function __construct(
         protected readonly ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard,
         protected readonly ReflectionProvider $reflectionProvider,
+        protected readonly SubclassIndex $subclassIndex,
     ) {}
 
     /**
@@ -73,6 +76,10 @@ final class RelationMethodReturnTypeRector extends AbstractRector
             return null;
         }
 
+        if ($this->isOverriddenByChild($classReflection, $this->getName($node), $scope->getFile())) {
+            return null;
+        }
+
         $node->returnType = new FullyQualified($relationClass);
 
         return $node;
@@ -102,6 +109,27 @@ AFTER,
                 ),
             ],
         );
+    }
+
+    /**
+     * A child override must declare a compatible return type, which an untyped or differently typed one doesn't.
+     *
+     * @param ClassReflection $classReflection
+     * @param string $methodName
+     * @param string $filePath
+     *
+     * @return bool
+     */
+    protected function isOverriddenByChild(ClassReflection $classReflection, string $methodName, string $filePath): bool
+    {
+        foreach ($this->subclassIndex->descendantsOf($classReflection, $filePath) as $descendant) {
+            $declaringClass = $descendant->getNativeReflection()->getMethod($methodName)->getDeclaringClass()->getName();
+            if ($declaringClass !== $classReflection->getName()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

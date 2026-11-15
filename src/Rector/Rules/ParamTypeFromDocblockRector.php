@@ -66,7 +66,8 @@ final class ParamTypeFromDocblockRector extends AbstractRector
 
         $hasChanged = false;
         foreach ($node->getParams() as $param) {
-            if ($param->type !== null || $param->variadic) {
+            // A promoted param is a property as well, and the type would bind every later assignment to it.
+            if ($param->type !== null || $param->variadic || $param->isPromoted()) {
                 continue;
             }
 
@@ -142,7 +143,8 @@ AFTER,
 
     /**
      * A parent class or interface that declares the method fixes its params, and so does a trait,
-     * whose methods can override any parent of the class using it.
+     * whose methods can override any parent of the class using it. A constructor is fixed only by an
+     * interface or an abstract declaration.
      *
      * @param ClassMethod $classMethod
      *
@@ -159,17 +161,35 @@ AFTER,
             return true;
         }
 
-        if ($classMethod->isPrivate() || $this->isName($classMethod, '__construct')) {
+        if ($classMethod->isPrivate()) {
             return false;
         }
 
         $methodName = $this->getName($classMethod);
+        $isConstructor = $methodName === '__construct';
         foreach ($classReflection->getAncestors() as $ancestor) {
-            if ($ancestor->getName() !== $classReflection->getName() && $ancestor->hasMethod($methodName)) {
+            if ($ancestor->getName() === $classReflection->getName() || $ancestor->hasNativeMethod($methodName) === false) {
+                continue;
+            }
+
+            // A constructor only has to match one declared by an interface or as abstract.
+            if ($isConstructor === false || $this->isAbstractConstructor($ancestor)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * @param ClassReflection $classReflection
+     *
+     * @return bool
+     */
+    protected function isAbstractConstructor(ClassReflection $classReflection): bool
+    {
+        $nativeReflection = $classReflection->getNativeReflection();
+
+        return $nativeReflection->hasMethod('__construct') && $nativeReflection->getMethod('__construct')->isAbstract();
     }
 }
