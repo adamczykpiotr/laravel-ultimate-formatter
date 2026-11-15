@@ -57,7 +57,7 @@ class BlankLineAfterBannerCommentFixer implements FixerInterface
                 continue;
             }
 
-            $tokens[$index + 1] = new Token([T_WHITESPACE, "\n" . $content]);
+            $tokens[$index + 1] = new Token([T_WHITESPACE, "\n{$content}"]);
         }
     }
 
