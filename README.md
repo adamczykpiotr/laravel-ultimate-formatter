@@ -72,6 +72,9 @@ vendor/bin/ultimate-formatter check     # dry run of both, then PHPStan; stops a
 ```
 
 `check` runs PHPStan only when the project has a `phpstan.neon`, `phpstan.neon.dist` or `phpstan.dist.neon`.
+Before anything else it asks PHPStan whether that config loads the [PHPStan ruleset](#phpstan-ruleset),
+and fails with the includes to add when it doesn't, since the ruleset's rules would silently never run.
+Pass `--without-phpstan-ruleset` to run PHPStan without it.
 
 `format --models` regenerates model docblocks with laravel-ide-helper first, which is installed with the package. In a Laravel app the
 same commands are available as `php artisan formatter:install`, `formatter:format` and
