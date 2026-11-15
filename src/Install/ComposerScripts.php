@@ -40,7 +40,7 @@ class ComposerScripts
             return null;
         }
 
-        $scripts = data_get($composer, 'scripts');
+        $scripts = $composer->scripts ?? null;
         // An empty "scripts": [] decodes to an array, so it is replaced with an object.
         $scripts = $scripts instanceof stdClass ? $scripts : new stdClass();
         $missingScripts = collect(self::SCRIPTS)->reject(fn(string $command, string $name): bool => property_exists($scripts, $name));

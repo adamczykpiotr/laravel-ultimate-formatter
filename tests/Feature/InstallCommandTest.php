@@ -204,11 +204,11 @@ class InstallCommandTest extends TestCase
 
         $this->runInstall();
 
-        $composer = json_decode($this->readProjectFile('composer.json'), true);
+        $scripts = $this->composerScripts();
         $this->assertSame([
             'check' => 'vendor/bin/ultimate-formatter check',
             'format' => 'vendor/bin/ultimate-formatter format',
-        ], data_get($composer, 'scripts'));
+        ], $scripts);
     }
 
     /**
@@ -231,11 +231,11 @@ class InstallCommandTest extends TestCase
         $this->runInstall();
         $this->runInstall();
 
-        $composer = json_decode($this->readProjectFile('composer.json'), true);
+        $scripts = $this->composerScripts();
         $this->assertSame([
             '@php artisan vendor:publish --tag=laravel-assets --ansi --force',
             'vendor/bin/ultimate-formatter migrate-config',
-        ], data_get($composer, 'scripts.post-update-cmd'));
+        ], $scripts['post-update-cmd']);
     }
 
     /**
@@ -249,8 +249,8 @@ class InstallCommandTest extends TestCase
 
         $this->runInstall();
 
-        $composer = json_decode($this->readProjectFile('composer.json'), true);
-        $this->assertSame(['custom', 'vendor/bin/ultimate-formatter migrate-config'], data_get($composer, 'scripts.post-update-cmd'));
+        $scripts = $this->composerScripts();
+        $this->assertSame(['custom', 'vendor/bin/ultimate-formatter migrate-config'], $scripts['post-update-cmd']);
     }
 
     /**
@@ -263,8 +263,8 @@ class InstallCommandTest extends TestCase
 
         $this->runInstall();
 
-        $composer = json_decode($this->readProjectFile('composer.json'), true);
-        $this->assertNull(data_get($composer, 'scripts.post-update-cmd'));
+        $scripts = $this->composerScripts();
+        $this->assertArrayNotHasKey('post-update-cmd', $scripts);
     }
 
     /**
@@ -463,6 +463,19 @@ class InstallCommandTest extends TestCase
         $tester = new CommandTester(new InstallCommand());
 
         return $tester->execute(['--path' => $this->projectPath, ...$options]);
+    }
+
+    /**
+     * @return list<mixed>
+     */
+    protected function composerScripts(): array
+    {
+        $composer = json_decode($this->readProjectFile('composer.json'), true);
+        $this->assertIsArray($composer);
+        $scripts = $composer['scripts'] ?? [];
+        $this->assertIsArray($scripts);
+
+        return $scripts;
     }
 
     /**

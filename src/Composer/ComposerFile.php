@@ -65,8 +65,8 @@ class ComposerFile
     {
         $composer = $this->read($composerFile);
 
-        return data_get($composer, "require.{$package}") !== null
-            || data_get($composer, "require-dev.{$package}") !== null;
+        return collect(['require', 'require-dev'])
+            ->contains(fn(string $section): bool => isset($this->section($composer, $section)->{$package}));
     }
 
     /**
@@ -76,7 +76,7 @@ class ComposerFile
      */
     public function minimumPhpVersion(string $composerFile): string|null
     {
-        $constraint = data_get($this->read($composerFile), 'require.php');
+        $constraint = $this->section($this->read($composerFile), 'require')->php ?? null;
         if (is_string($constraint) === false) {
             return null;
         }
@@ -87,5 +87,18 @@ class ComposerFile
             ->reject(fn(string $version): bool => $version === '')
             ->sort(fn(string $first, string $second): int => version_compare($first, $second))
             ->first();
+    }
+
+    /**
+     * @param stdClass|null $composer
+     * @param string $name
+     *
+     * @return stdClass|null
+     */
+    protected function section(stdClass|null $composer, string $name): stdClass|null
+    {
+        $section = $composer->{$name} ?? null;
+
+        return $section instanceof stdClass ? $section : null;
     }
 }

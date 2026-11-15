@@ -46,24 +46,24 @@ class FormatCommand extends FormatterCommand
     {
         $path = $this->projectPath($input);
         $artisanSteps = [
-            'format.clear-cache' => $this->configReader->flag($path, 'pre.clear-cache'),
-            'format.migrate' => $this->configReader->flag($path, 'pre.migrate'),
-            'format.ide-helper' => $input->getOption('models') === true,
+            'clear-cache' => $this->configReader->flag($path, 'pre', 'clear-cache'),
+            'migrate' => $this->configReader->flag($path, 'pre', 'migrate'),
+            'ide-helper' => $input->getOption('models') === true,
         ];
 
         $enabledSteps = collect($artisanSteps)->filter()->keys();
         foreach ($enabledSteps as $step) {
-            $artisanExitCode = $this->toolRunner->run(Tool::ARTISAN, $this->configReader->arguments($path, $step), $path, $output);
+            $artisanExitCode = $this->toolRunner->run(Tool::ARTISAN, $this->configReader->arguments($path, 'format', $step), $path, $output);
             if ($artisanExitCode !== self::SUCCESS) {
                 return $artisanExitCode;
             }
         }
 
-        $rectorExitCode = $this->toolRunner->run(Tool::RECTOR, $this->configReader->arguments($path, 'format.rector'), $path, $output);
+        $rectorExitCode = $this->toolRunner->run(Tool::RECTOR, $this->configReader->arguments($path, 'format', 'rector'), $path, $output);
         if ($rectorExitCode !== self::SUCCESS) {
             return $rectorExitCode;
         }
 
-        return $this->toolRunner->run(Tool::PHP_CS_FIXER, $this->configReader->arguments($path, 'format.php-cs-fixer'), $path, $output);
+        return $this->toolRunner->run(Tool::PHP_CS_FIXER, $this->configReader->arguments($path, 'format', 'php-cs-fixer'), $path, $output);
     }
 }

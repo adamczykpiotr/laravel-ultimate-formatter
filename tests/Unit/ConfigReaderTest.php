@@ -44,7 +44,7 @@ class ConfigReaderTest extends TestCase
      */
     public function test_uses_package_defaults_without_a_published_config(): void
     {
-        $this->assertSame(['process', '--dry-run', '--no-progress-bar'], $this->configReader->arguments($this->projectPath, 'check.rector'));
+        $this->assertSame(['process', '--dry-run', '--no-progress-bar'], $this->configReader->arguments($this->projectPath, 'check', 'rector'));
     }
 
     /**
@@ -54,7 +54,7 @@ class ConfigReaderTest extends TestCase
     {
         $this->publishConfig("['check' => ['rector' => ['process', '--dry-run']]]");
 
-        $this->assertSame(['process', '--dry-run'], $this->configReader->arguments($this->projectPath, 'check.rector'));
+        $this->assertSame(['process', '--dry-run'], $this->configReader->arguments($this->projectPath, 'check', 'rector'));
     }
 
     /**
@@ -64,7 +64,7 @@ class ConfigReaderTest extends TestCase
     {
         $this->publishConfig("['check' => ['rector' => ['process']]]");
 
-        $this->assertSame(['fix', '--show-progress=none'], $this->configReader->arguments($this->projectPath, 'format.php-cs-fixer'));
+        $this->assertSame(['fix', '--show-progress=none'], $this->configReader->arguments($this->projectPath, 'format', 'php-cs-fixer'));
     }
 
     /**
@@ -77,7 +77,7 @@ class ConfigReaderTest extends TestCase
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Config ultimate-formatter.check.rector must contain only strings.');
 
-        $this->configReader->arguments($this->projectPath, 'check.rector');
+        $this->configReader->arguments($this->projectPath, 'check', 'rector');
     }
 
     /**
@@ -90,7 +90,7 @@ class ConfigReaderTest extends TestCase
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Config ultimate-formatter.pre.migrate must be a boolean.');
 
-        $this->configReader->flag($this->projectPath, 'pre.migrate');
+        $this->configReader->flag($this->projectPath, 'pre', 'migrate');
     }
 
     /**

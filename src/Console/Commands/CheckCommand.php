@@ -60,12 +60,12 @@ class CheckCommand extends FormatterCommand
         }
 
         // The fixer would check code Rector still has to change, so stop at the first failure like `format` does.
-        $rectorExitCode = $this->toolRunner->run(Tool::RECTOR, $this->configReader->arguments($path, 'check.rector'), $path, $output);
+        $rectorExitCode = $this->toolRunner->run(Tool::RECTOR, $this->configReader->arguments($path, 'check', 'rector'), $path, $output);
         if ($rectorExitCode !== self::SUCCESS) {
             return self::FAILURE;
         }
 
-        $fixerExitCode = $this->toolRunner->run(Tool::PHP_CS_FIXER, $this->configReader->arguments($path, 'check.php-cs-fixer'), $path, $output);
+        $fixerExitCode = $this->toolRunner->run(Tool::PHP_CS_FIXER, $this->configReader->arguments($path, 'check', 'php-cs-fixer'), $path, $output);
         if ($fixerExitCode !== self::SUCCESS) {
             return self::FAILURE;
         }
@@ -77,7 +77,7 @@ class CheckCommand extends FormatterCommand
             return self::SUCCESS;
         }
 
-        $phpstanExitCode = $this->toolRunner->run(Tool::PHPSTAN, $this->configReader->arguments($path, 'check.phpstan'), $path, $output);
+        $phpstanExitCode = $this->toolRunner->run(Tool::PHPSTAN, $this->configReader->arguments($path, 'check', 'phpstan'), $path, $output);
         if ($phpstanExitCode !== self::SUCCESS) {
             return self::FAILURE;
         }

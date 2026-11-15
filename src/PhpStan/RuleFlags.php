@@ -30,8 +30,8 @@ class RuleFlags implements IgnoreErrorExtension
         protected readonly ConfigReader $configReader = new ConfigReader(),
     ) {
         // Read on every run, not baked into PHPStan's cached container, so flipping a flag takes effect at once.
-        $defaults = $this->flags($configReader->defaultValue(self::FLAGS_KEY), ConfigReader::DEFAULT_CONFIG_FILE);
-        $published = $this->flags($configReader->publishedValue($publishedConfigFile, self::FLAGS_KEY), $publishedConfigFile);
+        $defaults = $this->flags($configReader->defaultSection(self::FLAGS_KEY), ConfigReader::DEFAULT_CONFIG_FILE);
+        $published = $this->flags($configReader->publishedSection($publishedConfigFile, self::FLAGS_KEY), $publishedConfigFile);
 
         // Only the ruleset's own rules can be turned off; any other error is left to ignoreErrors. A typo or a
         // renamed identifier would otherwise leave its rule on without a word, so it stops the run instead.
