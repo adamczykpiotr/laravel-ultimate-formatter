@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.9.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.8.0...v1.9.0) (2026-11-15)
+
+
+### Features
+
+* simplify quiet/verbose flags passing to commands underneath ([#33](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/33)) ([9313b84](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/9313b8452d36c97b7710600c80cccd29f2729b36))
+
 # [1.8.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.7.0...v1.8.0) (2026-11-15)
 
 
