@@ -22,6 +22,7 @@ class InstallCommand extends FormatterCommand
     protected const BLAME_IGNORE_REVS_FILE = '.git-blame-ignore-revs';
     protected const CI_WORKFLOW_FILE = '.github/workflows/code-style.yml';
     protected const PHPSTAN_CONFIG_FILE = 'phpstan.neon';
+    protected const IDE_HELPER_CONFIG_FILE = 'config/ide-helper.php';
     protected const PHPSTAN_RULES_FILE = 'vendor/adamczykpiotr/laravel-ultimate-formatter/phpstan-rules.neon';
     protected const PHPSTAN_EXTENSION_FILES = [
         'vendor/larastan/larastan/extension.neon',
@@ -114,9 +115,10 @@ class InstallCommand extends FormatterCommand
             self::BLAME_IGNORE_REVS_FILE => $this->renderStub('git-blame-ignore-revs.stub', $replacements),
         ];
 
-        // A package's config/ directory holds the configs it ships, so only an app gets this one.
+        // A package's config/ directory holds the configs it ships, so only an app gets these.
         if ($layout === ProjectLayout::APP) {
             $files[self::PUBLISHED_CONFIG_FILE] = (new Filesystem())->readFile(self::DEFAULT_CONFIG_FILE);
+            $files[self::IDE_HELPER_CONFIG_FILE] = $this->renderStub('ide-helper.php.stub', $replacements);
         }
 
         if ($ci) {

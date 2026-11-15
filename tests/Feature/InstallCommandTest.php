@@ -53,6 +53,7 @@ class InstallCommandTest extends TestCase
         $this->assertSame(Command::SUCCESS, $exitCode);
         $this->assertStringContainsString("__DIR__ . '/database/migrations'", $this->readProjectFile('rector.php'));
         $this->assertSame($this->filesystem->readFile(__DIR__ . '/../../config/ultimate-formatter.php'), $this->readProjectFile('config/ultimate-formatter.php'));
+        $this->assertSame($this->filesystem->readFile(__DIR__ . '/../../stubs/ide-helper.php.stub'), $this->readProjectFile('config/ide-helper.php'));
         $this->assertDirectoryDoesNotExist("{$this->projectPath}/.github");
         $this->assertFileDoesNotExist("{$this->projectPath}/.editorconfig");
         $this->assertFileExists("{$this->projectPath}/.git-blame-ignore-revs");
@@ -72,6 +73,7 @@ class InstallCommandTest extends TestCase
         $this->assertStringNotContainsString('withSkip', $this->readProjectFile('rector.php'));
         $this->assertStringContainsString('build/.php-cs-fixer.cache', $this->readProjectFile('.php-cs-fixer.php'));
         $this->assertFileDoesNotExist("{$this->projectPath}/config/ultimate-formatter.php");
+        $this->assertFileDoesNotExist("{$this->projectPath}/config/ide-helper.php");
     }
 
     /**
@@ -323,6 +325,38 @@ class InstallCommandTest extends TestCase
         $this->runInstall();
 
         $this->assertSame('custom', $this->readProjectFile('rector.php'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_keeps_an_existing_ide_helper_config(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/app");
+        $this->filesystem->touch("{$this->projectPath}/artisan");
+        $this->filesystem->dumpFile("{$this->projectPath}/config/ide-helper.php", 'custom');
+
+        $this->runInstall();
+
+        $this->assertSame('custom', $this->readProjectFile('config/ide-helper.php'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_ide_helper_config_overrides_the_package_defaults(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/app");
+        $this->filesystem->touch("{$this->projectPath}/artisan");
+
+        $this->runInstall();
+
+        $published = require "{$this->projectPath}/config/ide-helper.php";
+        $defaults = require __DIR__ . '/../../vendor/barryvdh/laravel-ide-helper/config/ide-helper.php';
+        $this->assertIsArray($published);
+        $this->assertIsArray($defaults);
+        $this->assertSame([], array_diff_key($published, $defaults));
+        $this->assertFalse($published['write_model_magic_where']);
     }
 
     /**
