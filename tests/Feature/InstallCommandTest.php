@@ -105,6 +105,32 @@ class InstallCommandTest extends TestCase
     /**
      * @return void
      */
+    public function test_app_paths_cover_config_database_and_routes(): void
+    {
+        $this->filesystem->mkdir([
+            "{$this->projectPath}/app",
+            "{$this->projectPath}/config",
+            "{$this->projectPath}/database/migrations",
+            "{$this->projectPath}/routes",
+            "{$this->projectPath}/tests",
+        ]);
+        $this->filesystem->touch("{$this->projectPath}/artisan");
+
+        $this->runInstall();
+
+        $fixerConfig = $this->readProjectFile('.php-cs-fixer.php');
+        $rectorConfig = $this->readProjectFile('rector.php');
+        foreach (['app', 'config', 'database', 'routes', 'tests'] as $directory) {
+            $this->assertStringContainsString("__DIR__ . '/{$directory}',", $fixerConfig);
+            $this->assertStringContainsString("__DIR__ . '/{$directory}',", $rectorConfig);
+        }
+
+        $this->assertStringContainsString("->withSkip([\n        __DIR__ . '/database/migrations',", $rectorConfig);
+    }
+
+    /**
+     * @return void
+     */
     public function test_installs_phpstan_config_with_the_ruleset(): void
     {
         $this->filesystem->mkdir(["{$this->projectPath}/app", "{$this->projectPath}/routes", "{$this->projectPath}/tests"]);
