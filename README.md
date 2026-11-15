@@ -74,8 +74,8 @@ vendor/bin/ultimate-formatter check     # dry run of both, then PHPStan; stops a
 `check` runs PHPStan only when the project has a `phpstan.neon`, `phpstan.neon.dist` or `phpstan.dist.neon`.
 
 `format --models` regenerates model docblocks with laravel-ide-helper first, which is installed with the package. In a Laravel app the
-same commands are available as `php artisan formatter:install`, `formatter:format`,
-`formatter:check` and `formatter:migrate-config`.
+same commands are available as `php artisan formatter:install`, `formatter:format` and
+`formatter:check`.
 
 Pass `-q` to silence every step, so only the exit code reports the result. Pass `-v`, `-vv` or `-vvv` to
 print each command before it runs and hand the same level to it. Both replace any `--quiet` or `-v` in the

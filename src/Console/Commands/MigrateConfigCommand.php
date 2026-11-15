@@ -11,7 +11,8 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use UnexpectedValueException;
 
-#[AsCommand(name: 'formatter:migrate-config', description: 'Bring the published config/ultimate-formatter.php up to date with the package')]
+// Composer's post-update-cmd runs it, so it stays out of the command lists.
+#[AsCommand(name: 'formatter:migrate-config', description: 'Bring the published config/ultimate-formatter.php up to date with the package', hidden: true)]
 class MigrateConfigCommand extends FormatterCommand
 {
     /**
