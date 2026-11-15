@@ -67,17 +67,17 @@ These flags replace any `--quiet` or `-v` in the [configured arguments](docs/con
 
 ### Upstream drift
 
-Rector, PHP CS Fixer and PHPStan change rule behaviour in minor releases, and a rule that drops out of an upstream set does so without a warning. Two checks catch that:
+Rector and PHP CS Fixer change rule behaviour in minor releases, and a rule that drops out of an upstream set does so without a warning. Two checks catch that:
 
-- `tests/Drift/Fixture/before` is a planted project with every behaviour the formatter should have. The check runs `install` and `format` on a copy and compares the result with `tests/Drift/Fixture/after`.
-- `tests/Drift/Snapshot/rules.txt` lists the rules each tool resolves from the config: the Rector rules after the sets are expanded, the PHP CS Fixer rules with every option resolved, and the PHPStan rules at level max. Deprecated rules are marked.
+- `tests/Drift/Fixture/before` is a planted project. The check formats a copy and compares it with `tests/Drift/Fixture/after`.
+- `tests/Drift/Snapshot/rector-rules.txt` lists the Rector rules after the sets are expanded, with deprecated ones marked.
 
 ```bash
 composer test:drift       # compare
 composer fixtures:update  # rewrite the expected output, then review the diff
 ```
 
-Both pin the output of the latest allowed versions, so `composer test` leaves them out. The `upstream-drift` workflow runs them on every pull request and weekly against a fresh `composer update`. When the weekly run fails, it opens or updates an issue labelled `upstream-drift` with the diff and the package versions.
+Both pin the output of the latest allowed versions, so `composer test` leaves them out. The `upstream-drift` workflow runs them on every pull request and weekly.
 
 ## Changelog
 
