@@ -239,7 +239,6 @@ class InstallCommand extends FormatterCommand
             return null;
         }
 
-        // Each version in the constraint, such as 8.3 in ^8.3.1, cut down to its major and minor.
         return Str::of($constraint)
             ->split('/[^\d.]+/')
             ->map(fn(string $part): string => Str::match('/\d+\.\d+/', $part))
