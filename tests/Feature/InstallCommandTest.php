@@ -213,6 +213,62 @@ class InstallCommandTest extends TestCase
     /**
      * @return void
      */
+    public function test_migrates_an_app_config_after_composer_update(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/app");
+        $this->filesystem->touch("{$this->projectPath}/artisan");
+        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", <<<'JSON'
+            {
+                "scripts": {
+                    "post-update-cmd": [
+                        "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+                    ]
+                }
+            }
+            JSON);
+
+        $this->runInstall();
+        $this->runInstall();
+
+        $composer = json_decode($this->readProjectFile('composer.json'), true);
+        $this->assertSame([
+            '@php artisan vendor:publish --tag=laravel-assets --ansi --force',
+            'vendor/bin/ultimate-formatter migrate-config',
+        ], data_get($composer, 'scripts.post-update-cmd'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_turns_a_single_post_update_command_into_a_list(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/app");
+        $this->filesystem->touch("{$this->projectPath}/artisan");
+        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", '{"scripts": {"check": "a", "format": "b", "post-update-cmd": "custom"}}');
+
+        $this->runInstall();
+
+        $composer = json_decode($this->readProjectFile('composer.json'), true);
+        $this->assertSame(['custom', 'vendor/bin/ultimate-formatter migrate-config'], data_get($composer, 'scripts.post-update-cmd'));
+    }
+
+    /**
+     * @return void
+     */
+    public function test_package_skips_the_config_migration(): void
+    {
+        $this->filesystem->mkdir("{$this->projectPath}/src");
+        $this->filesystem->dumpFile("{$this->projectPath}/composer.json", '{}');
+
+        $this->runInstall();
+
+        $composer = json_decode($this->readProjectFile('composer.json'), true);
+        $this->assertNull(data_get($composer, 'scripts.post-update-cmd'));
+    }
+
+    /**
+     * @return void
+     */
     public function test_keeps_composer_json_with_existing_scripts(): void
     {
         $this->filesystem->mkdir("{$this->projectPath}/src");

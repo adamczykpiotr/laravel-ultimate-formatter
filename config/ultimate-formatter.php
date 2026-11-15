@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    // The last migration applied to this file; vendor/bin/ultimate-formatter migrate-config keeps it up to date.
+    'config-version' => 0,
     'pre' => [
         'clear-cache' => false,
         'migrate' => false,
