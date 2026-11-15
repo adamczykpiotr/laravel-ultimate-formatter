@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.0...v1.13.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* keep [@use](https://github.com/use) docblocks when grouping traits, stop passing -q/-v to Rector ([#42](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/42)) ([2fc8fe3](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/2fc8fe354c2c7b83d7e10c17601d8242a6a8ae2e))
+
 # [1.13.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.12.0...v1.13.0) (2026-11-15)
 
 
