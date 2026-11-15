@@ -23,7 +23,13 @@ installed Laravel version. Rector skips `database/migrations`. Also:
 - Carbon instead of `date()`, `time()` and `new DateTime()`, through the `Date` facade so "now" can
   be faked in tests;
 - `dd()`, `dump()`, `var_dump()`, `print_r()` and `ray()` statements are removed;
-- with spatie/laravel-data installed, `XxxInput::validateAndCreate()` becomes `XxxInput::from()`.
+- with spatie/laravel-data installed, `XxxInput::validateAndCreate()` becomes `XxxInput::from()`;
+- a param with no native type gets the one from its `@param` tag (`@param list<string> $tags` gives
+  `array $tags`). Methods whose signature a parent class or interface fixes, trait methods, `mixed`
+  and types that conflict with the default value are left alone. A wrong `@param` now throws a
+  `TypeError`, so fix the tag when that happens;
+- a model method with no return type that only returns a relation gets one (`: BelongsTo`), and
+  with it the generic `@return BelongsTo<Part, $this>` tag.
 
 ## Left off on purpose
 

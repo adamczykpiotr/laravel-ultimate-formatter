@@ -107,11 +107,10 @@ class FixerConfigFactoryTest extends TestCase
     {
         $rules = FixerConfigFactory::rules();
 
+        $bracesPosition = $rules['braces_position'];
         $this->assertTrue($rules['declare_strict_types']);
-        $this->assertSame(
-            'next_line_unless_newline_at_signature_end',
-            data_get($rules, 'braces_position.functions_opening_brace'),
-        );
+        $this->assertIsArray($bracesPosition);
+        $this->assertSame('next_line_unless_newline_at_signature_end', $bracesPosition['functions_opening_brace']);
     }
 
     /**

@@ -33,7 +33,7 @@ enum ProjectLayout: string
     public function fixerDirectories(): array
     {
         return match ($this) {
-            self::APP => ['app', 'tests'],
+            self::APP => ['app', 'config', 'database', 'routes', 'tests'],
             self::PACKAGE => ['config', 'database', 'src', 'tests', 'workbench'],
         };
     }
@@ -44,7 +44,7 @@ enum ProjectLayout: string
     public function rectorDirectories(): array
     {
         return match ($this) {
-            self::APP => ['app', 'database', 'tests'],
+            self::APP => ['app', 'config', 'database', 'routes', 'tests'],
             self::PACKAGE => ['config', 'database', 'src', 'tests', 'workbench'],
         };
     }

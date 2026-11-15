@@ -1,5 +1,26 @@
 # Changelog
 
+# [1.14.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.7...v1.14.0) (2026-11-15)
+
+
+### Features
+
+* **refactor:** split commands into services with typed results ([#52](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/52)) ([a433f34](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/a433f3496089a338ac0a5bc2e851e3c4ca28297e))
+
+## [1.13.7](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.6...v1.13.7) (2026-11-15)
+
+
+### Bug Fixes
+
+* **rector:** add param types from [@param](https://github.com/param) tags and return types to relation methods ([#20](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/20)) ([#50](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/50)) ([600f25e](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/600f25e26636f26e43d0f3614423cebf2bba9ecd))
+
+## [1.13.6](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.5...v1.13.6) (2026-11-15)
+
+
+### Bug Fixes
+
+* format config, database and routes in applications ([#48](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/48)) ([934e511](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/934e5118204a1140cb9e8dcd1709f136ccbe5239)), closes [#18](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/18)
+
 ## [1.13.5](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.13.4...v1.13.5) (2026-11-15)
 
 

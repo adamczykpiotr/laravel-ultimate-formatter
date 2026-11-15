@@ -12,6 +12,8 @@ use AdamczykPiotr\UltimateFormatter\Rector\Rules\FactoryAttributeKeysToConstants
 use AdamczykPiotr\UltimateFormatter\Rector\Rules\ForeachNestedIfsToEarlyContinueRector;
 use AdamczykPiotr\UltimateFormatter\Rector\Rules\GroupTraitUsesRector;
 use AdamczykPiotr\UltimateFormatter\Rector\Rules\NormalizeMethodDocblockRector;
+use AdamczykPiotr\UltimateFormatter\Rector\Rules\ParamTypeFromDocblockRector;
+use AdamczykPiotr\UltimateFormatter\Rector\Rules\RelationMethodReturnTypeRector;
 use AdamczykPiotr\UltimateFormatter\Rector\Rules\RenameGenericForeachValueVariableRector;
 use AdamczykPiotr\UltimateFormatter\Rector\Rules\SingleLineClosureToArrowFunctionRector;
 use Composer\InstalledVersions;
@@ -92,6 +94,8 @@ class RectorConfigFactory
             ForeachNestedIfsToEarlyContinueRector::class,
             RenameGenericForeachValueVariableRector::class,
             ArrayKeyExistsTernaryToCoalesceRector::class,
+            ParamTypeFromDocblockRector::class,
+            RelationMethodReturnTypeRector::class,
         ];
     }
 

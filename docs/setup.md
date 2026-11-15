@@ -10,7 +10,7 @@ The command detects the layout and fills in the paths that exist:
 
 | Layout | Detected by | PHP CS Fixer | Rector | PHPStan |
 |---|---|---|---|---|
-| Application | `artisan` and `app/` | `app`, `tests` | `app`, `database`, `tests` | `app`, `database`, `routes`, `tests` |
+| Application | `artisan` and `app/` | `app`, `config`, `database`, `routes`, `tests` | `app`, `config`, `database`, `routes`, `tests` | `app`, `database`, `routes`, `tests` |
 | Package | `src/` | `config`, `database`, `src`, `tests`, `workbench` | `config`, `database`, `src`, `tests`, `workbench` | `database`, `src`, `tests`, `workbench` |
 
 ## Published files

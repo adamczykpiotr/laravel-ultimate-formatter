@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Console\Commands;
 
+use AdamczykPiotr\UltimateFormatter\Config\ConfigReader;
+use AdamczykPiotr\UltimateFormatter\Console\Tool;
+use AdamczykPiotr\UltimateFormatter\Console\ToolRunner;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -12,6 +15,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'formatter:format', description: 'Fix code style: Rector, then PHP CS Fixer')]
 class FormatCommand extends FormatterCommand
 {
+    /**
+     * @param ConfigReader $configReader
+     * @param ToolRunner $toolRunner
+     */
+    public function __construct(
+        protected readonly ConfigReader $configReader = new ConfigReader(),
+        protected readonly ToolRunner $toolRunner = new ToolRunner(),
+    ) {
+        parent::__construct();
+    }
+
     /**
      * @return void
      */
@@ -30,25 +44,26 @@ class FormatCommand extends FormatterCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $path = $this->projectPath($input);
         $artisanSteps = [
-            'format.clear-cache' => $this->configuredFlag($input, 'pre.clear-cache'),
-            'format.migrate' => $this->configuredFlag($input, 'pre.migrate'),
-            'format.ide-helper' => $input->getOption('models') === true,
+            'clear-cache' => $this->configReader->flag($path, 'pre', 'clear-cache'),
+            'migrate' => $this->configReader->flag($path, 'pre', 'migrate'),
+            'ide-helper' => $input->getOption('models') === true,
         ];
 
         $enabledSteps = collect($artisanSteps)->filter()->keys();
         foreach ($enabledSteps as $step) {
-            $artisanExitCode = $this->runPhpScript('artisan', $this->configuredArguments($input, $step), $input, $output);
+            $artisanExitCode = $this->toolRunner->run(Tool::ARTISAN, $this->configReader->arguments($path, 'format', $step), $path, $output);
             if ($artisanExitCode !== self::SUCCESS) {
                 return $artisanExitCode;
             }
         }
 
-        $rectorExitCode = $this->runPhpScript(self::RECTOR_SCRIPT, $this->configuredArguments($input, 'format.rector'), $input, $output);
+        $rectorExitCode = $this->toolRunner->run(Tool::RECTOR, $this->configReader->arguments($path, 'format', 'rector'), $path, $output);
         if ($rectorExitCode !== self::SUCCESS) {
             return $rectorExitCode;
         }
 
-        return $this->runPhpScript('vendor/bin/php-cs-fixer', $this->configuredArguments($input, 'format.php-cs-fixer'), $input, $output);
+        return $this->toolRunner->run(Tool::PHP_CS_FIXER, $this->configReader->arguments($path, 'format', 'php-cs-fixer'), $path, $output);
     }
 }
