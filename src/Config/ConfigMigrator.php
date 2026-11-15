@@ -14,7 +14,8 @@ class ConfigMigrator
     public const DIFFS_DIRECTORY = __DIR__ . '/../../config/diffs';
     protected const VERSION_PATTERN = "/^\\s*'config-version'\\s*=>\\s*'([^']*)'\\s*,\\s*$/";
     protected const INITIAL_VERSION = '0.0.0';
-    protected const KEY_PATTERN = "/^\\s*'([^']+)'\\s*=>(.*)$/";
+    protected const KEY_PATTERN = "/^\\s*'([^']+)'\\s*=>/";
+    protected const VALUE_PATTERN = "/^\\s*'[^']+'\\s*=>(.*)$/";
     protected const RETURN_LINE = 'return [';
 
     /**
@@ -41,7 +42,7 @@ class ConfigMigrator
     public function migrate(string $configFile, bool $dryRun = false): ConfigMigration
     {
         $filesystem = new Filesystem();
-        $lines = explode("\n", $filesystem->readFile($configFile));
+        $lines = collect(explode("\n", $filesystem->readFile($configFile)));
         $isVersioned = $this->publishedVersion($lines) !== null;
         $fromVersion = $this->publishedVersion($lines) ?? $this->unversionedVersion($lines);
         $toVersion = $this->latestVersion();
@@ -50,8 +51,8 @@ class ConfigMigrator
         }
 
         // The diffs leave the version line out, so it is lifted out while they apply and written back after.
-        $lines = array_values(collect($lines)->reject(fn(string $line): bool => preg_match(self::VERSION_PATTERN, $line) === 1)->all());
-        $returnLine = collect($lines)->search(fn(string $line): bool => trim($line) === self::RETURN_LINE);
+        $lines = $lines->reject(fn(string $line): bool => Str::isMatch(self::VERSION_PATTERN, $line))->values();
+        $returnLine = $lines->search(fn(string $line): bool => trim($line) === self::RETURN_LINE);
         if (is_int($returnLine) === false) {
             throw new UnexpectedValueException('it does not return a [...] array');
         }
@@ -76,7 +77,7 @@ class ConfigMigrator
 
         $lines = $this->withVersion($lines, $toVersion);
         if ($dryRun === false) {
-            $filesystem->dumpFile($configFile, implode("\n", $lines));
+            $filesystem->dumpFile($configFile, $lines->implode("\n"));
         }
 
         return new ConfigMigration($fromVersion, $toVersion, $applied, $skipped);
@@ -94,13 +95,13 @@ class ConfigMigrator
     }
 
     /**
-     * @param list<string> $lines
+     * @param Collection<int, string> $lines
      *
      * @return string|null
      */
-    protected function publishedVersion(array $lines): string|null
+    protected function publishedVersion(Collection $lines): string|null
     {
-        $versionLine = collect($lines)->first(fn(string $line): bool => preg_match(self::VERSION_PATTERN, $line) === 1);
+        $versionLine = $lines->first(fn(string $line): bool => Str::isMatch(self::VERSION_PATTERN, $line));
 
         return is_string($versionLine) ? Str::match(self::VERSION_PATTERN, $versionLine) : null;
     }
@@ -109,19 +110,19 @@ class ConfigMigrator
      * A config published before config-version existed is dated by its keys: the newest release whose added keys are
      * all there, so every later diff still applies to it.
      *
-     * @param list<string> $lines
+     * @param Collection<int, string> $lines
      *
      * @return string
      */
-    protected function unversionedVersion(array $lines): string
+    protected function unversionedVersion(Collection $lines): string
     {
-        $publishedKeys = collect($lines)->map(fn(string $line): string|null => $this->key($line))->filter()->values();
+        $publishedKeys = $lines->map(fn(string $line): string|null => $this->key($line))->filter()->values();
 
         return $this->versions()
             ->filter(function (string $version) use ($publishedKeys): bool {
                 $addedKeys = $this->addedKeys("{$this->diffsDirectory}/{$version}.diff");
 
-                return $addedKeys !== [] && collect($addedKeys)->diff($publishedKeys)->isEmpty();
+                return $addedKeys->isNotEmpty() && $addedKeys->diff($publishedKeys)->isEmpty();
             })
             ->last() ?? self::INITIAL_VERSION;
     }
@@ -129,9 +130,9 @@ class ConfigMigrator
     /**
      * @param string $diffFile
      *
-     * @return list<string>
+     * @return Collection<int, non-falsy-string>
      */
-    protected function addedKeys(string $diffFile): array
+    protected function addedKeys(string $diffFile): Collection
     {
         $lines = collect($this->hunks($diffFile))->flatMap(fn(array $hunk): array => $hunk);
         $keysOf = fn(string $operation): Collection => $lines
@@ -139,24 +140,28 @@ class ConfigMigrator
             ->map(fn(array $line): string|null => $this->key($line[1]))
             ->filter();
 
-        return array_values($keysOf('+')->diff($keysOf('-'))->unique()->all());
+        return $keysOf('+')->diff($keysOf('-'))->unique()->values();
     }
 
     /**
-     * @param list<string> $lines
+     * @param Collection<int, string> $lines
      * @param string $version
      *
-     * @return list<string>
+     * @return Collection<int, string>
      */
-    protected function withVersion(array $lines, string $version): array
+    protected function withVersion(Collection $lines, string $version): Collection
     {
-        $returnLine = (int)collect($lines)->search(fn(string $line): bool => trim($line) === self::RETURN_LINE);
+        $returnLine = (int)$lines->search(fn(string $line): bool => trim($line) === self::RETURN_LINE);
         $versionLines = ["    'config-version' => '{$version}',"];
-        if (trim($lines[$returnLine + 1] ?? '') !== '') {
+        if (trim($lines->get($returnLine + 1) ?? '') !== '') {
             $versionLines[] = '';
         }
 
-        return [...array_slice($lines, 0, $returnLine + 1), ...$versionLines, ...array_slice($lines, $returnLine + 1)];
+        // splice() edits in place, so it works on a copy to leave the caller's lines alone.
+        $versionedLines = $lines->values();
+        $versionedLines->splice($returnLine + 1, 0, $versionLines);
+
+        return $versionedLines;
     }
 
     /**
@@ -193,45 +198,52 @@ class ConfigMigrator
     }
 
     /**
-     * @param list<string> $lines
+     * @param Collection<int, string> $lines
      * @param list<array{string, string}> $hunk
      *
-     * @return array{list<string>, list<string>}|null
+     * @return array{Collection<int, string>, list<string>}|null
      */
-    protected function applyHunk(array $lines, array $hunk): array|null
+    protected function applyHunk(Collection $lines, array $hunk): array|null
     {
-        $oldLines = array_values(collect($hunk)
+        $oldLines = collect($hunk)
             ->reject(fn(array $line): bool => $line[0] === '+')
             ->map(fn(array $line): string => $line[1])
-            ->all());
+            ->values();
         $start = $this->locate($lines, $oldLines);
         if ($start === null) {
             return null;
         }
 
-        $position = $start;
+        $matchedLines = $lines->slice($start, $oldLines->count())->values()->all();
+        $offset = 0;
         $newLines = [];
         $messages = [];
         // Each - line is paired with the + line in the same place, so a changed default keeps the project's value.
         $removedLines = [];
+        $pairedCount = 0;
         foreach ($hunk as [$operation, $text]) {
             if ($operation === '-') {
-                $removedLines[] = [$text, $lines[$position]];
-                $position++;
+                $removedLines[] = [$text, $matchedLines[$offset]];
+                $offset++;
 
                 continue;
             }
 
             if ($operation === ' ') {
-                $messages = [...$messages, ...$this->removalMessages($removedLines)];
+                $messages = [...$messages, ...$this->removalMessages(collect($removedLines)->slice($pairedCount))];
                 $removedLines = [];
-                $newLines[] = $lines[$position];
-                $position++;
+                $pairedCount = 0;
+                $newLines[] = $matchedLines[$offset];
+                $offset++;
 
                 continue;
             }
 
-            $removedLine = array_shift($removedLines);
+            $removedLine = $removedLines[$pairedCount] ?? null;
+            if ($removedLine !== null) {
+                $pairedCount++;
+            }
+
             [$replacement, $replacementMessages] = $removedLine === null
                 ? [[$text], $this->keyMessage('Added', $text)]
                 : $this->replaceLine($removedLine[0], $removedLine[1], $text);
@@ -239,23 +251,25 @@ class ConfigMigrator
             $messages = [...$messages, ...$replacementMessages];
         }
 
-        $messages = [...$messages, ...$this->removalMessages($removedLines)];
-        $lines = [...array_slice($lines, 0, $start), ...$newLines, ...array_slice($lines, $position)];
+        $messages = [...$messages, ...$this->removalMessages(collect($removedLines)->slice($pairedCount))];
+        // splice() edits in place, so it works on a copy to leave the caller's lines alone.
+        $patchedLines = $lines->values();
+        $patchedLines->splice($start, $offset, $newLines);
 
-        return [$lines, $messages];
+        return [$patchedLines, $messages];
     }
 
     /**
      * A match on the exact lines wins; failing that, key lines match on the key alone, so a changed value still matches.
      *
-     * @param list<string> $lines
-     * @param list<string> $oldLines
+     * @param Collection<int, string> $lines
+     * @param Collection<int, string> $oldLines
      *
      * @return int|null
      */
-    protected function locate(array $lines, array $oldLines): int|null
+    protected function locate(Collection $lines, Collection $oldLines): int|null
     {
-        if ($oldLines === []) {
+        if ($oldLines->isEmpty()) {
             return null;
         }
 
@@ -263,15 +277,15 @@ class ConfigMigrator
             fn(string $line): string => trim($line),
             fn(string $line): string => $this->key($line) === null ? trim($line) : "'{$this->key($line)}' =>",
         ];
-        if (count($oldLines) > count($lines)) {
+        if ($oldLines->count() > $lines->count()) {
             return null;
         }
 
         foreach ($normalisers as $normalise) {
-            $needle = collect($oldLines)->map($normalise)->all();
-            $haystack = collect($lines)->map($normalise)->all();
-            $matches = collect(range(0, count($haystack) - count($needle)))
-                ->filter(fn(int $start): bool => array_slice($haystack, $start, count($needle)) === $needle);
+            $needle = $oldLines->map($normalise)->all();
+            $haystack = $lines->map($normalise);
+            $matches = collect(range(0, $haystack->count() - count($needle)))
+                ->filter(fn(int $start): bool => $haystack->slice($start, count($needle))->values()->all() === $needle);
 
             // A key such as rector sits under both format and check, so an ambiguous match is not applied.
             if ($matches->count() === 1) {
@@ -310,17 +324,17 @@ class ConfigMigrator
             return [[$newDefault], ["Updated the default of {$newKey}."]];
         }
 
-        return [[$newDefault], [...$this->removalMessages([[$oldDefault, $publishedLine]]), ...$this->keyMessage('Added', $newDefault)]];
+        return [[$newDefault], [...$this->removalMessages(collect([[$oldDefault, $publishedLine]])), ...$this->keyMessage('Added', $newDefault)]];
     }
 
     /**
-     * @param list<array{string, string}> $removedLines
+     * @param Collection<int, array{string, string}> $removedLines
      *
-     * @return list<string>
+     * @return Collection<int, non-falsy-string>
      */
-    protected function removalMessages(array $removedLines): array
+    protected function removalMessages(Collection $removedLines): Collection
     {
-        return array_values(collect($removedLines)
+        return $removedLines
             ->flatMap(function (array $removedLine): array {
                 [$oldDefault, $publishedLine] = $removedLine;
                 $key = $this->key($oldDefault);
@@ -333,7 +347,7 @@ class ConfigMigrator
                     ? ["Removed {$key}."]
                     : ["Removed {$key}, move your value {$this->value($publishedLine)} over if it still applies."];
             })
-            ->all());
+            ->values();
     }
 
     /**
@@ -356,7 +370,10 @@ class ConfigMigrator
      */
     protected function key(string $line): string|null
     {
-        return preg_match(self::KEY_PATTERN, $line, $matches) === 1 ? $matches[1] : null;
+        // The key pattern needs at least one character, so an empty match means the line holds no key.
+        $key = Str::match(self::KEY_PATTERN, $line);
+
+        return $key === '' ? null : $key;
     }
 
     /**
@@ -366,10 +383,10 @@ class ConfigMigrator
      */
     protected function value(string $line): string|null
     {
-        if (preg_match(self::KEY_PATTERN, $line, $matches) !== 1) {
+        if ($this->key($line) === null) {
             return null;
         }
 
-        return rtrim(trim(Str::before($matches[2], ' //')), ',');
+        return rtrim(trim(Str::before(Str::match(self::VALUE_PATTERN, $line), ' //')), ',');
     }
 }

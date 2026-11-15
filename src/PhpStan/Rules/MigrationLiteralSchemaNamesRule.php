@@ -7,6 +7,7 @@ namespace AdamczykPiotr\UltimateFormatter\PhpStan\Rules;
 use AdamczykPiotr\UltimateFormatter\PhpStan\Rules\Support\MigrationSchema;
 use Illuminate\Database\Schema\ColumnDefinition;
 use Illuminate\Database\Schema\ForeignKeyDefinition;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
@@ -69,7 +70,7 @@ class MigrationLiteralSchemaNamesRule implements Rule
             return [];
         }
 
-        $names = collect($this->nameArguments($node, $method, $scope))
+        $names = $this->nameArguments($node, $method, $scope)
             ->reject(fn(Arg $arg): bool => $arg->value instanceof Closure || $arg->value instanceof ArrowFunction);
         if ($names->every(fn(Arg $arg): bool => $arg->unpack === false && $this->isLiteral($arg->value))) {
             return [];
@@ -87,24 +88,24 @@ class MigrationLiteralSchemaNamesRule implements Rule
      * @param string $method
      * @param Scope $scope
      *
-     * @return list<Arg>
+     * @return Collection<int, Arg>
      */
-    protected function nameArguments(StaticCall|MethodCall $call, string $method, Scope $scope): array
+    protected function nameArguments(StaticCall|MethodCall $call, string $method, Scope $scope): Collection
     {
-        $args = array_values($call->getArgs());
+        $args = collect($call->getArgs())->values();
 
         if (MigrationSchema::isSchemaCall($call, $scope)) {
             // The connection name isn't part of the schema.
-            return $method === 'connection' ? [] : $args;
+            return $method === 'connection' ? new Collection() : $args;
         }
 
         if (MigrationSchema::isBlueprintCall($call, $scope)) {
             if (in_array($method, self::BLUEPRINT_OPTION_METHODS, true)) {
-                return [];
+                return new Collection();
             }
 
             // The other arguments of a column definition are lengths, allowed values and other settings.
-            return Str::startsWith($method, ['drop', 'rename']) ? $args : array_slice($args, 0, 1);
+            return Str::startsWith($method, ['drop', 'rename']) ? $args : $args->take(1);
         }
 
         if ($call instanceof MethodCall && in_array($method, self::COLUMN_DEFINITION_NAME_METHODS, true)) {
@@ -114,7 +115,7 @@ class MigrationLiteralSchemaNamesRule implements Rule
             }
         }
 
-        return [];
+        return new Collection();
     }
 
     /**

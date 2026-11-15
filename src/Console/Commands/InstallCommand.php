@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Console\Commands;
 
 use AdamczykPiotr\UltimateFormatter\Console\ProjectLayout;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use stdClass;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -78,7 +79,7 @@ class InstallCommand extends FormatterCommand
 
         // A package's dist archive ships to every consumer, so the dev-only files stay out of it.
         if ($layout === ProjectLayout::PACKAGE) {
-            $this->addExportIgnores($path, array_keys($files), $output);
+            $this->addExportIgnores($path, collect($files)->keys(), $output);
         }
 
         return self::SUCCESS;
@@ -238,9 +239,11 @@ class InstallCommand extends FormatterCommand
             return null;
         }
 
-        preg_match_all('/\d+\.\d+/', $constraint, $matches);
-
-        return collect($matches[0])
+        // Each version in the constraint, such as 8.3 in ^8.3.1, cut down to its major and minor.
+        return Str::of($constraint)
+            ->split('/[^\d.]+/')
+            ->map(fn(string $part): string => Str::match('/\d+\.\d+/', $part))
+            ->reject(fn(string $version): bool => $version === '')
             ->sort(fn(string $first, string $second): int => version_compare($first, $second))
             ->first();
     }
@@ -265,14 +268,14 @@ class InstallCommand extends FormatterCommand
         $scripts = data_get($composer, 'scripts');
         // An empty "scripts": [] decodes to an array, so it is replaced with an object.
         $scripts = $scripts instanceof stdClass ? $scripts : new stdClass();
-        $missingScripts = array_diff_key(self::COMPOSER_SCRIPTS, get_object_vars($scripts));
+        $missingScripts = collect(self::COMPOSER_SCRIPTS)->reject(fn(string $command, string $name): bool => property_exists($scripts, $name));
         foreach ($missingScripts as $name => $command) {
             $scripts->{$name} = $command;
         }
 
         // Only an app publishes config/ultimate-formatter.php, so only an app migrates it after each upgrade.
         $addsMigrateConfig = $layout === ProjectLayout::APP && $this->addMigrateConfigScript($scripts);
-        if ($missingScripts === [] && $addsMigrateConfig === false) {
+        if ($missingScripts->isEmpty() && $addsMigrateConfig === false) {
             $output->writeln('Skipped the composer scripts, they already exist.');
 
             return;
@@ -283,8 +286,8 @@ class InstallCommand extends FormatterCommand
         $contents = json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         (new Filesystem())->dumpFile($composerFile, "{$contents}\n");
 
-        if ($missingScripts !== []) {
-            $names = implode(' and ', array_keys($missingScripts));
+        if ($missingScripts->isNotEmpty()) {
+            $names = $missingScripts->keys()->implode(' and ');
             $output->writeln("Added the {$names} composer scripts.");
         }
 
@@ -315,19 +318,19 @@ class InstallCommand extends FormatterCommand
 
     /**
      * @param string $path
-     * @param list<string> $targets
+     * @param Collection<int, string> $targets
      * @param OutputInterface $output
      *
      * @return void
      */
-    protected function addExportIgnores(string $path, array $targets, OutputInterface $output): void
+    protected function addExportIgnores(string $path, Collection $targets, OutputInterface $output): void
     {
         $filesystem = new Filesystem();
         $attributesFile = "{$path}/.gitattributes";
         $contents = $filesystem->exists($attributesFile) ? $filesystem->readFile($attributesFile) : '';
         $ignoredPaths = $this->exportIgnoredPaths($contents);
 
-        $missingTargets = collect($targets)
+        $missingTargets = $targets
             ->reject(fn(string $target): bool => collect($ignoredPaths)->contains(
                 fn(string $ignoredPath): bool => $target === $ignoredPath || str_starts_with($target, "{$ignoredPath}/"),
             ))
@@ -352,12 +355,13 @@ class InstallCommand extends FormatterCommand
      */
     protected function exportIgnoredPaths(string $contents): array
     {
-        return collect(preg_split('/\R/', $contents) ?: [])
+        return Str::of($contents)
+            ->split('/\R/')
             ->map(fn(string $line): string => trim($line))
             ->reject(fn(string $line): bool => $line === '' || str_starts_with($line, '#'))
-            ->map(fn(string $line): array => preg_split('/\s+/', $line) ?: [])
-            ->filter(fn(array $tokens): bool => in_array('export-ignore', array_slice($tokens, 1), true))
-            ->map(fn(array $tokens): string => trim($tokens[0], '/'))
+            ->map(fn(string $line): Collection => Str::of($line)->split('/\s+/'))
+            ->filter(fn(Collection $tokens): bool => $tokens->skip(1)->contains('export-ignore'))
+            ->map(fn(Collection $tokens): string => trim($tokens->first() ?? '', '/'))
             ->values()
             ->all();
     }

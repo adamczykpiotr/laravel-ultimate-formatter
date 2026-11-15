@@ -177,7 +177,7 @@ class SingleTraitUseStatementFixer implements FixerInterface
         }
 
         // Later statements first, so the first statement's indexes stay put until it is rewritten.
-        foreach (array_reverse(array_slice($ranges, 1)) as [$docblock, $start, $end]) {
+        foreach (collect($ranges)->skip(1)->reverse() as [$docblock, $start, $end]) {
             $from = $docblock ?? $start;
             $tokens->clearRange($from, $end);
             $tokens->removeLeadingWhitespace($from);

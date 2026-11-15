@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AdamczykPiotr\UltimateFormatter\Rector\Rules;
 
+use Illuminate\Support\Str;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -83,11 +84,7 @@ AFTER,
      */
     protected function expandNullableTypes(string $docText): string
     {
-        $expanded = preg_replace_callback(
-            self::NULLABLE_TAG_TYPE_PATTERN,
-            static fn(array $match): string => "{$match[1]}{$match[2]}{$match[3]}|null",
-            $docText,
-        );
+        $expanded = Str::replaceMatches(self::NULLABLE_TAG_TYPE_PATTERN, '$1$2$3|null', $docText);
 
         return $expanded ?? $docText;
     }

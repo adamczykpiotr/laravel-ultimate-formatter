@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AdamczykPiotr\UltimateFormatter\Tests\Unit;
 
 use AdamczykPiotr\UltimateFormatter\PhpStan\RuleFlags;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -44,14 +46,10 @@ class RuleFlagsTest extends TestCase
     public function test_default_flags_list_every_rule_the_ruleset_reports(): void
     {
         $neon = (string)file_get_contents(self::ROOT_DIRECTORY . '/phpstan-rules.neon');
-        preg_match_all("/errorIdentifier: '([^']+)'/", $neon, $bannedCalls);
+        $bannedCalls = Str::matchAll("/errorIdentifier: '([^']+)'/", $neon);
 
         $customRules = collect(glob(self::ROOT_DIRECTORY . '/src/PhpStan/Rules/*.php') ?: [])
-            ->flatMap(function (string $file): array {
-                preg_match_all("/->identifier\\('([^']+)'\\)/", (string)file_get_contents($file), $matches);
-
-                return $matches[1];
-            });
+            ->flatMap(fn(string $file): Collection => Str::matchAll("/->identifier\\('([^']+)'\\)/", (string)file_get_contents($file)));
 
         $architectureRules = collect(glob(self::ROOT_DIRECTORY . '/src/PhpStan/Architecture/*.php') ?: [])
             ->flatMap(function (string $file): array {
@@ -65,7 +63,7 @@ class RuleFlagsTest extends TestCase
             ->map(fn(string $method): string => "phpat.{$method}");
 
         // The one Larastan rule the ruleset turns on, through its noEnvCallsOutsideOfConfig parameter.
-        $identifiers = collect($bannedCalls[1])
+        $identifiers = $bannedCalls
             ->merge($customRules)
             ->merge($architectureRules)
             ->push('larastan.noEnvCallsOutsideOfConfig')

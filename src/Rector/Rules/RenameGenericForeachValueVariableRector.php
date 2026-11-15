@@ -143,7 +143,7 @@ AFTER,
         $isUsable = $singularName !== $pluralName
             && $singularName !== 'this'
             && in_array($singularName, self::GENERIC_NAMES, true) === false
-            && preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $singularName) === 1;
+            && Str::isMatch('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $singularName);
 
         return $isUsable ? $singularName : null;
     }
@@ -204,7 +204,7 @@ AFTER,
         $docMention = $this->betterNodeFinder->findFirst(
             $foreach,
             fn(Node $node): bool => collect($node->getComments())->contains(
-                fn(Comment $comment): bool => preg_match("/\\\${$name}\\b/", $comment->getText()) === 1,
+                fn(Comment $comment): bool => Str::isMatch("/\\\${$name}\\b/", $comment->getText()),
             ),
         );
 
