@@ -108,12 +108,13 @@ class ConfigMigratorTest extends TestCase
     /**
      * @return void
      */
-    public function test_default_config_is_on_the_latest_version(): void
+    public function test_default_config_includes_every_diff(): void
     {
         $config = require self::ROOT_DIRECTORY . '/config/ultimate-formatter.php';
 
         $this->assertIsArray($config);
-        $this->assertSame((new ConfigMigrator())->latestVersion(), $config['config-version']);
+        $this->assertIsString($config['config-version']);
+        $this->assertTrue(version_compare($config['config-version'], (new ConfigMigrator())->latestVersion(), '>='));
     }
 
     /**
@@ -125,6 +126,7 @@ class ConfigMigratorTest extends TestCase
 
         $this->assertStringContainsString('config/ultimate-formatter.php is unchanged', $output);
         $this->assertSame('0.0.0', $this->migrator()->latestVersion());
+        $this->assertStringContainsString("'config-version' => '1.0.0',", $this->filesystem->readFile("{$this->packagePath}/config/ultimate-formatter.php"));
     }
 
     /**

@@ -165,7 +165,8 @@ published files call the package's factories and include its ruleset, so they pi
 a migration.
 
 The diffs are generated on release: semantic-release runs `.github/scripts/generate-config-diff.sh` with
-the version it is about to tag, and commits the diff and the bumped `config-version` with the release.
+the version it is about to tag. It sets `config-version` to that version on every release and writes a diff only
+when the config changed, and both are committed with the release.
 
 ## Performance
 
