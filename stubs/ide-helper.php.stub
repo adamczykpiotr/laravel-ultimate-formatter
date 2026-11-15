@@ -1,0 +1,16 @@
+<?php
+
+declare(strict_types=1);
+
+// laravel-ide-helper merges its own defaults under this file, so only the settings
+// that differ from them live here. See vendor/barryvdh/laravel-ide-helper/config/ide-helper.php.
+return [
+    // Magic where{Column}() methods hide typos from static analysis, so query through where('column') instead.
+    'write_model_magic_where' => false,
+
+    // Models whose docblocks are maintained by hand, e.g. table-less abstract bases.
+    'ignored_models' => [],
+
+    // Classes implementing Barryvdh\LaravelIdeHelper\Contracts\ModelHookInterface, for types ide-helper can't infer.
+    'model_hooks' => [],
+];
