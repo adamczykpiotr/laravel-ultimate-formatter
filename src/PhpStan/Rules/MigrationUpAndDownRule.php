@@ -17,6 +17,8 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class MigrationUpAndDownRule implements Rule
 {
+    protected const REQUIRED_METHODS = ['up', 'down'];
+
     /**
      * @return string
      */
@@ -39,7 +41,7 @@ class MigrationUpAndDownRule implements Rule
         }
 
         $errors = [];
-        foreach (['up', 'down'] as $method) {
+        foreach (self::REQUIRED_METHODS as $method) {
             if ($class->hasNativeMethod($method) === false) {
                 $errors[] = RuleErrorBuilder::message("Migration has no {$method}() method, every migration has both up() and down().")
                     ->identifier('ultimateFormatter.migrationUpAndDown')

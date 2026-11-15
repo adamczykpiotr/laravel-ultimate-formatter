@@ -10,6 +10,8 @@ return new class extends Migration
 {
     protected const STATUSES = ['DRAFT', 'PUBLISHED'];
 
+    protected const DESCRIPTION = 'Blog posts';
+
     public function up(): void
     {
         Schema::create('posts', function (Blueprint $table): void {
@@ -22,6 +24,7 @@ return new class extends Migration
             $table->timestamps();
             $table->index(['title', 'status']);
             $table->unique('title');
+            $table->comment(self::DESCRIPTION);
         });
 
         Schema::table('tags', function (Blueprint $table): void {
@@ -37,6 +40,8 @@ return new class extends Migration
             $table->dropColumn('color');
         });
 
-        Schema::dropIfExists('posts');
+        Schema::withoutForeignKeyConstraints(function (): void {
+            Schema::dropIfExists('posts');
+        });
     }
 };

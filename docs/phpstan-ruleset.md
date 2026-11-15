@@ -56,10 +56,10 @@ others work: PHPStan only knows `$table` is a `Blueprint` when the parameter say
 
 | Rule                                                                                                                   | Identifier                                        |
 |------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
-| No column is defined after `$table->timestamps()` (or `timestampsTz()`, `nullableTimestamps()`) in the same closure. Indexes and foreign keys may follow. | `ultimateFormatter.migrationTimestampsLast`       |
+| No column is defined after `$table->timestamps()` (or `timestampsTz()`, `nullableTimestamps()`, `nullableTimestampsTz()`) in the same closure. Indexes and foreign keys may follow. | `ultimateFormatter.migrationTimestampsLast`       |
 | Every migration has both `up()` and `down()`.                                                                          | `ultimateFormatter.migrationUpAndDown`            |
-| `Schema::` calls, the first argument of `$table->` calls (every argument of `drop*()` and `rename*()`), and `->constrained()`, `->references()`, `->on()` and `->after()` name tables and columns with string literals or literal arrays: no variables, properties, constants, method calls or loop variables. | `ultimateFormatter.migrationLiteralSchemaNames`   |
-| Schema closures are `function (Blueprint $table): void`, never `fn`.                                                   | `ultimateFormatter.migrationSchemaClosure`        |
+| `Schema::` calls, the first argument of `$table->` calls (every argument of `drop*()` and `rename*()`, none of `comment()`, `charset()`, `collation()` and `engine()`), and `->constrained()`, `->references()`, `->on()` and `->after()` name tables and columns with string literals or literal arrays: no variables, properties, constants, method calls or loop variables. | `ultimateFormatter.migrationLiteralSchemaNames`   |
+| Closures of `Schema::create()`, `table()` and `whenTable*()` are `function (Blueprint $table): void`, never `fn`.                                                   | `ultimateFormatter.migrationSchemaClosure`        |
 | Foreign keys use `foreignId(...)->constrained()`, not `unsignedBigInteger('*_id')` or `unsignedInteger('*_id')`.        | `ultimateFormatter.migrationForeignIdConstrained` |
 
 ### Resources, enums, queued classes and models

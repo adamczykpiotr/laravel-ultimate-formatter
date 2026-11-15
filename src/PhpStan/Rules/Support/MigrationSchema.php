@@ -17,9 +17,6 @@ use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\ObjectType;
 
-/**
- * Recognises the schema calls of a migration, shared by the migration rules.
- */
 class MigrationSchema
 {
     /**
@@ -35,7 +32,7 @@ class MigrationSchema
     }
 
     /**
-     * Schema::create(), Schema::table() and the rest, also through Schema::connection(...).
+     * Also matches calls through Schema::connection(...), which return the Builder.
      *
      * @param Node $node
      * @param Scope $scope
@@ -57,8 +54,6 @@ class MigrationSchema
     }
 
     /**
-     * A call on the Blueprint, such as $table->string().
-     *
      * @param Node $node
      * @param Scope $scope
      *

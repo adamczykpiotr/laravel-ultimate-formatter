@@ -13,6 +13,11 @@ class RulesetTest extends TestCase
     protected const FIXTURE_DIRECTORY = __DIR__ . '/Fixture';
 
     /**
+     * The fixtures peak near PHPStan's 128M default.
+     */
+    protected const PHPSTAN_MEMORY_LIMIT = '--memory-limit=1G';
+
+    /**
      * @return void
      */
     public function test_reports_every_banned_call_and_architecture_violation(): void
@@ -156,7 +161,7 @@ class RulesetTest extends TestCase
     protected function analyseFixtures(string $configFile = self::FIXTURE_DIRECTORY . '/phpstan.neon'): array
     {
         $process = new Process(
-            [PHP_BINARY, 'vendor/bin/phpstan', 'analyse', "--configuration={$configFile}", '--error-format=json', '--no-progress', '--memory-limit=1G'],
+            [PHP_BINARY, 'vendor/bin/phpstan', 'analyse', "--configuration={$configFile}", '--error-format=json', '--no-progress', self::PHPSTAN_MEMORY_LIMIT],
             __DIR__ . '/../..',
             timeout: null,
         );

@@ -28,6 +28,11 @@ use PHPStan\Rules\RuleErrorBuilder;
 class MigrationSchemaClosureRule implements Rule
 {
     /**
+     * Only these pass a Blueprint to their closure; withoutForeignKeyConstraints() and the like take one without.
+     */
+    protected const BLUEPRINT_CLOSURE_METHODS = ['create', 'table', 'whenTableHasColumn', 'whenTableDoesntHaveColumn', 'whenTableHasIndex', 'whenTableDoesntHaveIndex'];
+
+    /**
      * @return string
      */
     public function getNodeType(): string
@@ -48,6 +53,10 @@ class MigrationSchemaClosureRule implements Rule
         }
 
         if (MigrationSchema::isInMigration($scope) === false || MigrationSchema::isSchemaCall($node, $scope) === false) {
+            return [];
+        }
+
+        if (in_array(MigrationSchema::methodName($node), self::BLUEPRINT_CLOSURE_METHODS, true) === false) {
             return [];
         }
 

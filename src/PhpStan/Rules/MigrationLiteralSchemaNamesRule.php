@@ -37,10 +37,12 @@ use PHPStan\Type\ObjectType;
  */
 class MigrationLiteralSchemaNamesRule implements Rule
 {
-    /**
-     * Column definition methods whose arguments are all table, column or index names.
-     */
     protected const COLUMN_DEFINITION_NAME_METHODS = ['after', 'constrained', 'on', 'references'];
+
+    /**
+     * Table options, whose first argument is text or a setting rather than a name.
+     */
+    protected const BLUEPRINT_OPTION_METHODS = ['charset', 'collation', 'comment', 'engine'];
 
     /**
      * @return string
@@ -67,7 +69,6 @@ class MigrationLiteralSchemaNamesRule implements Rule
             return [];
         }
 
-        // The schema closures take no names; MigrationSchemaClosureRule checks them.
         $names = collect($this->nameArguments($node, $method, $scope))
             ->reject(fn(Arg $arg): bool => $arg->value instanceof Closure || $arg->value instanceof ArrowFunction);
         if ($names->every(fn(Arg $arg): bool => $arg->unpack === false && $this->isLiteral($arg->value))) {
@@ -82,8 +83,6 @@ class MigrationLiteralSchemaNamesRule implements Rule
     }
 
     /**
-     * The arguments of the call that hold table, column or index names.
-     *
      * @param StaticCall|MethodCall $call
      * @param string $method
      * @param Scope $scope
@@ -100,6 +99,10 @@ class MigrationLiteralSchemaNamesRule implements Rule
         }
 
         if (MigrationSchema::isBlueprintCall($call, $scope)) {
+            if (in_array($method, self::BLUEPRINT_OPTION_METHODS, true)) {
+                return [];
+            }
+
             // The other arguments of a column definition are lengths, allowed values and other settings.
             return Str::startsWith($method, ['drop', 'rename']) ? $args : array_slice($args, 0, 1);
         }
@@ -115,8 +118,6 @@ class MigrationLiteralSchemaNamesRule implements Rule
     }
 
     /**
-     * How the call reads in the message: Schema::create(), $table->string() or ->constrained().
-     *
      * @param StaticCall|MethodCall $call
      * @param string $method
      *

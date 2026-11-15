@@ -27,9 +27,6 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class ResourceKeysCamelCaseRule implements Rule
 {
-    /**
-     * JsonResource methods that merge their array arguments into the output.
-     */
     protected const MERGING_METHODS = ['merge', 'mergeWhen', 'mergeUnless', 'when', 'unless'];
 
     /**
@@ -54,8 +51,9 @@ class ResourceKeysCamelCaseRule implements Rule
         }
 
         // Arrays returned from closures inside toArray(), such as a mapped collection, are output too.
-        $returned = collect((new NodeFinder())->find($method->stmts ?? [], fn(Node $found): bool => $found instanceof Return_ || $found instanceof ArrowFunction))
-            ->map(fn(Node $found): ?Expr => $found instanceof Return_ ? $found->expr : ($found instanceof ArrowFunction ? $found->expr : null))
+        $returning = (new NodeFinder())->find($method->stmts ?? [], fn(Node $found): bool => $found instanceof Return_ || $found instanceof ArrowFunction);
+        $returned = collect($returning)
+            ->map(fn(Node $found): ?Expr => $found instanceof Return_ || $found instanceof ArrowFunction ? $found->expr : null)
             ->filter()
             ->all();
 
@@ -90,12 +88,12 @@ class ResourceKeysCamelCaseRule implements Rule
     {
         $prefix = Str::startsWith($key, '_') ? '_' : '';
 
-        return $prefix . Str::camel(Str::after($key, $prefix));
+        $camel = Str::camel(Str::after($key, $prefix));
+
+        return "{$prefix}{$camel}";
     }
 
     /**
-     * Collects the string keys of the output array, its nested arrays and the arrays merged in with $this->merge() and the like.
-     *
      * @param Expr $expression
      * @param array<int, String_> $keys
      *

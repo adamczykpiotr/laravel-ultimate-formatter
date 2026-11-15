@@ -72,8 +72,6 @@ class MigrationTimestampsLastRule implements Rule
     }
 
     /**
-     * The column definitions that follow timestamps() in the closure.
-     *
      * @param Closure $closure
      *
      * @return list<IdentifierRuleError>
@@ -93,7 +91,7 @@ class MigrationTimestampsLastRule implements Rule
                 continue;
             }
 
-            if ($timestampsDefined) {
+            if ($timestampsDefined === true) {
                 $errors[] = RuleErrorBuilder::message("Column {$method}() is defined after timestamps(), created_at and updated_at stay the last columns.")
                     ->identifier('ultimateFormatter.migrationTimestampsLast')
                     ->line($statement->getStartLine())
@@ -107,8 +105,6 @@ class MigrationTimestampsLastRule implements Rule
     }
 
     /**
-     * The Blueprint method a statement such as $table->string('name')->nullable(); starts with.
-     *
      * @param Stmt $statement
      * @param string $table
      *
