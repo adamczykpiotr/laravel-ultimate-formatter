@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.13.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.12.0...v1.13.0) (2026-11-15)
+
+
+### Features
+
+* **check:** custom PHPStan rules for migrations, resources, enums, jobs and models ([#34](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/34)) ([dc13fd2](https://github.com/adamczykpiotr/laravel-ultimate-formatter/commit/dc13fd266f23dc0c571ecd31bac41c7e1281cfcc)), closes [#23](https://github.com/adamczykpiotr/laravel-ultimate-formatter/issues/23)
+
 # [1.12.0](https://github.com/adamczykpiotr/laravel-ultimate-formatter/compare/v1.11.0...v1.12.0) (2026-11-15)
 
 
