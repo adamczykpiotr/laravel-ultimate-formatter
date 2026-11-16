@@ -1,0 +1,35 @@
+name: upstream-drift
+
+# composer.lock isn't committed, so each run gets the latest allowed Rector.
+# Fails with a diff when the resolved Rector rules change.
+
+on:
+  pull_request:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  upstream-drift:
+    name: upstream-drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install the latest allowed versions
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Regenerate the snapshot
+        run: composer snapshot:update
+
+      - name: Fail on any difference
+        run: |
+          git add --intent-to-add --all tests/Drift
+          git diff --exit-code -- tests/Drift

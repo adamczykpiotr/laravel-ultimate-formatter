@@ -21,6 +21,12 @@
             <exclude>tests/PhpStan/Fixture</exclude>
         </testsuite>
     </testsuites>
+    <groups>
+        <!-- The Rector rule snapshot depends on the installed Laravel version, so it runs on its own: composer test:drift. -->
+        <exclude>
+            <group>drift</group>
+        </exclude>
+    </groups>
     <php>
         <!-- The full Rector config, with the Laravel sets, outgrows PHP's default 128M. -->
         <ini name="memory_limit" value="1G"/>
